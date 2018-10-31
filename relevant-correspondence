@@ -1,0 +1,28 @@
+## Pointers to related work
+Pointers to related work:
+
+    Predicting Program Properties from Big Code [here]
+    Deep Learning Type Inference [here]
+    Python probabilistic type inference with natural language support [here]. This does not use machine learning but still somewhat relevant.
+
+Types in Python:
+
+    Intro to Python 3.x type annotations [here] [here] and [here]
+    The Python typing library [here]
+    mypy (a python type checker)
+    Facebook's type checker [here]
+
+
+And a somewhat different idea, I've worked on, but still on types: RefiNym
+
+## Re: Pointers to related work
+In the meanwhile, there are some things that you can have a look at/think about, if you have time:
+
+* https://github.com/dropbox/pyannotate to see how you can strip/add/check annotations. If you have time, testing this along with mypy or pyre on a small project just to familiarize yourself with Python type annotations makes sense.
+* Also have a look at the "predicting program properties" paper, in the previous email. The goal here would be to decide which approach to take. The "Deep Learning Type Inference" takes a very unstructured approach, but exploits features from the context by learning them from deep learning. The predicting program properties paper take a much more structured approach but hard-codes features. Of course, we can combine these two approaches, if time allows.
+* Have a look at character-level convolutional neural networks. Maybe this is a good starting point https://arxiv.org/pdf/1509.01626.pdf If we were to use them to predict types just from the names of variables, how could we use them?
+* Corpora: to follow the approach of the papers we need to have a reasonably large corpus of Python 3.x code with type annotations. I have a cloned about 1.5k popular Python projects, but how can we detect those that have type annotations?
+
+## Typed AST
+You may find this useful, because it contains type info even for Python 2.x: https://github.com/python/typed_ast
+
