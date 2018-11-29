@@ -14,7 +14,7 @@ from typed_ast.ast3 import (
     Attribute, FunctionDef, For, Name, NodeVisitor, Tuple, With)
 
 from type_representation import (
-    FunctionType, is_tuple, GenericType, Type, UNANNOTATED)
+    FunctionType, is_tuple, GenericType, Kind, Type, UNANNOTATED)
 
 A = TypeVar('A')  # pylint: disable=C0103
 B = TypeVar('B')  # pylint: disable=C0103
@@ -79,7 +79,7 @@ class TypeCollector(NodeVisitor):
                  name: Optional[str],
                  typ: Optional[Type]) -> None:
         """Saves type mapping if typ present"""
-        if name is not None and typ is not None:
+        if name is not None and typ is not None and typ.kind != Kind.EMPTY:
             self.defs.append((name, typ))
 
     def add_types(self: 'TypeCollector',
@@ -88,7 +88,7 @@ class TypeCollector(NodeVisitor):
         """Saves type mapping if typ present"""
         if len(names) == len(typs):
             for name, typ in zip(names, typs):  # type: str, Type
-                self.defs.append((name, typ))
+                self.add_type(name, typ)
 
     def visit_FunctionDef(  # pylint: disable=C0103
             self,
@@ -100,7 +100,7 @@ class TypeCollector(NodeVisitor):
         arg_types: List[Type] = [from_option(UNANNOTATED, arg) for arg in args]
         ret_type: Type = from_option(UNANNOTATED,
                                      bind(node.returns, Type.from_ast))
-        self.defs.append((node.name, FunctionType(arg_types, ret_type)))
+        self.add_type(node.name, FunctionType(arg_types, ret_type))
         # self.add_type(node.name, parse_type(node.type_comment))
         self.generic_visit(node)
 
@@ -172,6 +172,15 @@ def get_type_annotations(filestring: str) -> List[t.Tuple[str, Type]]:
     return collector.defs
 
 
+def extract_type_annotations(infilename: str, outfilename: str) -> None:
+    """Extract type annotations from input file to output file"""
+    with open(infilename, 'r') as infile:  # type: TextIO
+        types: List[t.Tuple[str, Type]] = get_type_annotations(infile.read())
+
+    with open(outfilename, 'w', newline='') as outfile:  # type: TextIO
+        csv.writer(outfile).writerows(types)
+
+
 if __name__ == "__main__":
     PARSER: ArgumentParser = ArgumentParser(
         description='Extract (name,type) pairs from python source file')
@@ -180,8 +189,4 @@ if __name__ == "__main__":
                         help='output file')
     ARGS: Namespace = PARSER.parse_args()
 
-    with open(ARGS.path, 'r') as infile:  # type: TextIO
-        types: List[t.Tuple[str, Type]] = get_type_annotations(infile.read())
-
-    with open(ARGS.out, 'w', newline='') as outfile:  # type: TextIO
-        csv.writer(outfile).writerows(types)
+    extract_type_annotations(ARGS.path, ARGS.out)

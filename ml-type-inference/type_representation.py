@@ -1,5 +1,6 @@
 """Defines type representation"""
 from abc import ABCMeta, abstractmethod
+from enum import auto, Enum, unique
 # pylint: disable=W0611
 from typing import (Any, cast, Generic, Iterable,
                     Optional, Sequence, Union)
@@ -14,8 +15,41 @@ T = t.TypeVar('T')  # pylint: disable=C0103
 S = t.TypeVar('S')  # pylint: disable=C0103
 
 
+@unique
+class Kind(Enum):
+    """
+    Kind for annotated types
+
+    EMPTY - type purely deduced based on shape, e.g. Callable[[_, _], _]
+    PARTIAL - type with some unannotated fields
+    FULL - completely annotated type
+    """
+    EMPTY = auto()
+    PARTIAL = auto()
+    FULL = auto()
+
+    @staticmethod
+    def combine(kinds: Iterable['Kind']) -> 'Kind':
+        """Combines multiple subkinds into overall kind"""
+        sofar: 'Kind' = Kind.PARTIAL
+        for k in kinds:
+            if k == Kind.PARTIAL:
+                return Kind.PARTIAL
+            if k == Kind.EMPTY:
+                if sofar == Kind.FULL:
+                    return Kind.PARTIAL
+                sofar = Kind.EMPTY
+            elif k == Kind.FULL:
+                if sofar == Kind.EMPTY:
+                    return Kind.PARTIAL
+                sofar = Kind.FULL
+        return Kind.EMPTY
+
+
 class Type(Generic[T], metaclass=ABCMeta):
     """Base class of all types"""
+    kind: Kind
+
     @abstractmethod
     def __str__(self: 'Type') -> str:
         pass
@@ -76,8 +110,11 @@ class SimpleType(Type[T]):
     """Type that corresponds to a simple type (no arguments)"""
     typ: str
 
-    def __init__(self: 'SimpleType[T]', typ: str) -> None:
+    def __init__(self: 'SimpleType[T]',
+                 typ: str,
+                 kind: Kind = Kind.FULL) -> None:
         self.typ = typ
+        self.kind = kind
 
     def __str__(self: 'SimpleType[T]') -> str:
         return str(self.typ)
@@ -98,6 +135,8 @@ class GenericType(Type[T]):
                  args: Iterable[Type]) -> None:
         self.generic_typ = generic_typ
         self.args = list(args)
+        self.kind = Kind.combine([self.generic_typ.kind]
+                                 + [a.kind for a in self.args])  # noqa: W503
 
     def __str__(self: 'GenericType[T]') -> str:
         return str(self.generic_typ)\
@@ -128,7 +167,7 @@ class UnionType(GenericType[T]):
     Unions are treated differently in that they are flattened
     """
     def __init__(self: 'UnionType[T]', args: Iterable[Type]) -> None:
-        super().__init__('Union', UnionType.__flatten(args))
+        super().__init__(SimpleType('Union'), UnionType.__flatten(args))
 
     @staticmethod
     def __flatten(args: Iterable[Type]) -> t.List[Type]:
@@ -148,12 +187,6 @@ class UnionType(GenericType[T]):
         return None
 
 
-def is_tuple(typ: GenericType[T]) -> bool:
-    """Returns true if and only if the argument is a tuple type"""
-    return isinstance(typ.generic_typ, SimpleType) and\
-        typ.generic_typ.typ == 'Tuple'
-
-
 class FunctionType(GenericType[T]):
     """Type for Callable"""
     ret_type: Type
@@ -161,8 +194,9 @@ class FunctionType(GenericType[T]):
     def __init__(self: 'FunctionType[T]',
                  args: Iterable[Type],
                  ret: Type) -> None:
-        super().__init__('Callable', args)
+        super().__init__(SimpleType('Callable', Kind.EMPTY), args)
         self.ret_type = ret
+        self.kind = Kind.combine((self.kind, self.ret_type.kind))
 
     def __str__(self: 'FunctionType[T]') -> str:
         return str(self.generic_typ)\
@@ -201,6 +235,7 @@ class NestedType(Type[T]):
     def __init__(self: 'NestedType[T]', parent: Type, typ: Type) -> None:
         self.parent = parent
         self.typ = typ
+        self.kind = Kind.combinde((self.parent.kind, self.typ.kind))
 
     def __str__(self: 'NestedType[T]') -> str:
         return str(self.parent) + '.' + str(self.typ)
@@ -216,6 +251,12 @@ class NestedType(Type[T]):
         return None
 
 
+def is_tuple(typ: GenericType[T]) -> bool:
+    """Returns true if and only if the argument is a tuple type"""
+    return isinstance(typ.generic_typ, SimpleType) and\
+        typ.generic_typ.typ == 'Tuple'
+
+
 NONE_TYPE: Type[None] = SimpleType('None')
 ANY_TYPE: Type[Any] = SimpleType('Any')
-UNANNOTATED: Type[Any] = SimpleType('_')
+UNANNOTATED: Type[Any] = SimpleType('_', Kind.EMPTY)
