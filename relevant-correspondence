@@ -1,19 +1,19 @@
 ## Pointers to related work
 Pointers to related work:
 
-    Predicting Program Properties from Big Code [here]
-    Deep Learning Type Inference [here]
-    Python probabilistic type inference with natural language support [here]. This does not use machine learning but still somewhat relevant.
+    Predicting Program Properties from Big Code [here] http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.706.7690&rep=rep1&type=pdf
+    Deep Learning Type Inference [here] https://miltos.allamanis.com/publicationfiles/hellendoorn2018deep/hellendoorn2018deep.pdf
+    Python probabilistic type inference with natural language support [here] https://dl.acm.org/citation.cfm?id=2950343. This does not use machine learning but still somewhat relevant.
 
 Types in Python:
 
-    Intro to Python 3.x type annotations [here] [here] and [here]
-    The Python typing library [here]
-    mypy (a python type checker)
-    Facebook's type checker [here]
+    Intro to Python 3.x type annotations [here] https://dev.to/dstarner/using-pythons-type-annotations-4cfe [here] https://medium.com/@shamir.stav_83310/the-other-great-benefit-of-python-type-annotations-896c7d077c6b and [here] https://www.caktusgroup.com/blog/2017/02/22/python-type-annotations/
+    The Python typing library [here] https://docs.python.org/3.6/library/typing.html?highlight=typing#module-typing
+    mypy http://mypy-lang.org/ (a python type checker)
+    Facebook's type checker [here] https://github.com/facebook/pyre-check
 
 
-And a somewhat different idea, I've worked on, but still on types: RefiNym
+And a somewhat different idea, I've worked on, but still on types: RefiNym https://miltos.allamanis.com/publicationfiles/dash2018refinym/dash2018refinym.pdf
 
 ## Re: Pointers to related work
 In the meanwhile, there are some things that you can have a look at/think about, if you have time:
@@ -26,3 +26,9 @@ In the meanwhile, there are some things that you can have a look at/think about,
 ## Typed AST
 You may find this useful, because it contains type info even for Python 2.x: https://github.com/python/typed_ast
 
+## Re: Project Proposal draft
+I also attach a file with the grep output of projects that import typing. Having a look at typeshed https://github.com/python/typeshed/ and 1-2 other projects, might be a good place to start.
+
+## RE: My (mis)handling of the project
+a) Write or copy-paste a short Python example with type annotations. For example, use this https://github.com/Microsoft/dpu-utils/blob/master/dpu_utils/utils/chunkwriter.py code I've wrote that contains both Python 3 and Python 2-style annotations.
+b) Use the typed_ast library (here https://github.com/python/typed_ast ) to parse the code and find all annotations and the variables/parameters they refer to. This shouldn't be more than 50 lines long and you will probably be able to do this in less than 2 hours.
