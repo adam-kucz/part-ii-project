@@ -3,22 +3,33 @@
 
 from argparse import ArgumentParser, Namespace
 import csv
-from typing import (cast, Iterable, List,  # noqa: F401
+from typing import (Callable, Iterable, List,  # noqa: F401
                     Optional, Sequence, TextIO, TypeVar, Union)
 import typing as t
 
 import typed_ast.ast3 as ast3
 # pylint: disable=E0611
-from typed_ast.ast3 import (AnnAssign, arg, Assign, AST, AsyncFunctionDef,
-                            AsyncFor, AsyncWith, Attribute,
-                            Expression, FunctionDef, For,
-                            Index, Name, NameConstant, NodeVisitor,
-                            Str, Subscript, Tuple, With)
+from typed_ast.ast3 import (
+    AnnAssign, arg, Assign, AST, AsyncFunctionDef, AsyncFor, AsyncWith,
+    Attribute, FunctionDef, For, Name, NodeVisitor, Tuple, With)
+
+from type_representation import (
+    FunctionType, is_tuple, GenericType, Type, UNANNOTATED)
 
 A = TypeVar('A')  # pylint: disable=C0103
 B = TypeVar('B')  # pylint: disable=C0103
 
-ANY: str = 'Any'
+
+# pylint: disable=C0103
+def bind(a: Optional[A], f: Callable[[A], Optional[B]]) -> Optional[B]:
+    """Monadic bind for the Option monad"""
+    return f(a) if a is not None else None
+
+
+# pylint: disable=C0103
+def from_option(a: A, option_a: Optional[A]) -> A:
+    """Return value in Optional if present or default otherwise"""
+    return option_a if option_a is not None else a
 
 
 def get_name(name: AST) -> Optional[str]:
@@ -42,148 +53,113 @@ def get_names(names: Union[AST, Sequence[AST]]) -> List[str]:
     return [nam for nams in nam_its for nam in nams]
 
 
-def parse_type(type_string: Optional[str]) -> Optional[str]:
-    """Interprets a string as a type (if possible)"""
-    if type_string is not None:
-        expr: Expression = cast(Expression,
-                                ast3.parse(type_string, mode='eval'))
-        return read_type(expr.body)
-    return None
+def to_list(typ: Optional[Type]):
+    """
+    Converts optional type to a list of types
 
-
-def parse_types(type_string: Optional[str]) -> List[str]:
-    """Interprets a string as a list of types (if possible)"""
-    if type_string is not None:
-        expr: Expression = cast(Expression,
-                                ast3.parse(type_string, mode='eval'))
-        return read_types(expr.body)
-    return []
-
-
-def read_type(node: Optional[AST]) -> Optional[str]:
-    """Converts type annotation into a type"""
-    if isinstance(node, Str):
-        return parse_type(node.s)
-    if isinstance(node, Name):
-        return node.id
-    if isinstance(node, NameConstant):
-        return str(node.value)
-    if isinstance(node, Attribute):
-        module: Optional[str] = read_type(node.value)
-        return module + '.' + node.attr if module is not None else None
-    if isinstance(node, Subscript):
-        if isinstance(node.value, Name) and isinstance(node.slice, Index):
-            val: Name = node.value
-            index: Index = node.slice
-            args: List[Optional[str]]
-            if isinstance(index.value, Tuple):
-                args = [read_type(expr) for expr in index.value.elts]
-            else:
-                args = [read_type(index.value)]
-            if all(arg is not None for arg in args):
-                return val.id + \
-                    '[' + ', '.join(cast(Iterable[str], args)) + ']'
-    return None
-
-
-def read_types(node: Optional[AST]) -> List[str]:
-    """Converts type annotations to types"""
-    if isinstance(node, Tuple):
-        typs: Iterable[Optional[str]] = (read_type(e) for e in node.elts)
-        return [t for t in typs if t is not None]
-    typ: Optional[str] = read_type(node)
-    return [typ] if typ is not None else []
+    List is empty if type was None,
+    if type was a tuple then its arguments are returned,
+    otherwise one-element containing the type is returned
+    """
+    if typ is None:
+        return []
+    if isinstance(typ, GenericType) and is_tuple(typ):
+        return typ.args
+    return [typ]
 
 
 class TypeCollector(NodeVisitor):
     """Collects and saves all (arg, type) pairs"""
-    defs: List[t.Tuple[str, str]]
+    defs: List[t.Tuple[str, Type]]
 
     def __init__(self: 'TypeCollector') -> None:
         self.defs = []
 
     def add_type(self: 'TypeCollector',
                  name: Optional[str],
-                 typ: Optional[str]) -> None:
+                 typ: Optional[Type]) -> None:
         """Saves type mapping if typ present"""
         if name is not None and typ is not None:
             self.defs.append((name, typ))
 
     def add_types(self: 'TypeCollector',
                   names: Sequence[str],
-                  typs: Sequence[str]) -> None:
+                  typs: Sequence[Type]) -> None:
         """Saves type mapping if typ present"""
         if len(names) == len(typs):
-            for name, typ in zip(names, typs):  # type: str, str
+            for name, typ in zip(names, typs):  # type: str, Type
                 self.defs.append((name, typ))
 
     def visit_FunctionDef(  # pylint: disable=C0103
             self,
             node: FunctionDef) -> None:
         """Add the function definition node to the list"""
-        args: Iterable[Optional[str]]\
-            = (read_type(arg.annotation) for arg in node.args.args)
-        arg_types: List[str] = [arg if arg is not None else ANY
-                                for arg in args]
-        ret: Optional[str] = read_type(node.returns)
-        ret_type: str = ret if ret is not None else ANY
-        self.defs.append((node.name,
-                          'Callable[[' + ', '.join(arg_types) + '], '
-                          + ret_type + ']'))  # noqa: W503
+        args: Iterable[Optional[Type]]\
+            = (bind(arg.annotation, Type.from_ast)
+               for arg in node.args.args)
+        arg_types: List[Type] = [from_option(UNANNOTATED, arg) for arg in args]
+        ret_type: Type = from_option(UNANNOTATED,
+                                     bind(node.returns, Type.from_ast))
+        self.defs.append((node.name, FunctionType(arg_types, ret_type)))
         # self.add_type(node.name, parse_type(node.type_comment))
         self.generic_visit(node)
 
     def visit_AsyncFunctionDef(  # pylint: disable=C0103
-            self, n: AsyncFunctionDef):
+            self, n: AsyncFunctionDef) -> None:
         """Add the function definition node to the list"""
         self.visit_FunctionDef(FunctionDef(n.name, n.args, n.body,
                                            n.decorator_list, n.returns,
                                            n.type_comment))
 
     def visit_For(  # pylint: disable=C0103
-            self, node: For):
+            self, node: For) -> None:
         """Add for variable if type comment present"""
-        self.add_types(get_names(node.target), parse_types(node.type_comment))
+        self.add_types(get_names(node.target),
+                       to_list(bind(node.type_comment,
+                                    Type.from_type_comment)))
         self.generic_visit(node)
 
     def visit_AsyncFor(  # pylint: disable=C0103
-            self, n: AsyncFor):
+            self, n: AsyncFor) -> None:
         """Add for variable if type comment present"""
         self.visit_For(For(n.target, n.iter, n.body, n.orelse, n.type_comment))
 
     def visit_With(  # pylint: disable=C0103
-            self, node: With):
+            self, node: With) -> None:
         """Add with variables if type comment present"""
         self.add_types(get_names([item.optional_vars
                                   for item in node.items
                                   if item.optional_vars is not None]),
-                       parse_types(node.type_comment))
+                       to_list(bind(node.type_comment,
+                                    Type.from_type_comment)))
         self.generic_visit(node)
 
     def visit_AsyncWith(  # pylint: disable=C0103
-            self, n: AsyncWith):
+            self, n: AsyncWith) -> None:
         """Add with variables if type comment present"""
         self.visit_With(With(n.items, n.body, n.type_comment))
 
-    def visit_Assign(self, node: Assign):  # pylint: disable=C0103
+    def visit_Assign(self, node: Assign) -> None:  # pylint: disable=C0103
         """Add the type from assignment comment to the list"""
-        self.add_types(get_names(node.targets), parse_types(node.type_comment))
+        self.add_types(get_names(node.targets),
+                       to_list(bind(node.type_comment,
+                                    Type.from_type_comment)))
         self.generic_visit(node)
 
     def visit_arg(self, node: arg) -> None:
         """Add the function argument to type list"""
-        self.add_type(node.arg, read_type(node.annotation))
+        self.add_type(node.arg, bind(node.annotation, Type.from_ast))
         self.generic_visit(node)
 
     def visit_AnnAssign(  # pylint: disable=C0103
             self,
             node: AnnAssign) -> None:
         """Add the function argument to type list"""
-        self.add_type(get_name(node.target), read_type(node.annotation))
+        self.add_type(get_name(node.target), Type.from_ast(node.annotation))
         self.generic_visit(node)
 
 
-def get_type_annotations(filestring: str) -> List[t.Tuple[str, str]]:
+def get_type_annotations(filestring: str) -> List[t.Tuple[str, Type]]:
     """
     Extract types from annotations
 
@@ -205,7 +181,9 @@ if __name__ == "__main__":
     ARGS: Namespace = PARSER.parse_args()
 
     with open(ARGS.path, 'r') as infile:  # type: TextIO
-        types: List[t.Tuple[str, str]] = get_type_annotations(infile.read())
+        types: List[t.Tuple[str, Type]] = get_type_annotations(infile.read())
 
     with open(ARGS.out, 'w', newline='') as outfile:  # type: TextIO
         csv.writer(outfile).writerows(types)
+
+    a, b = 1, 2  # type: int, float
