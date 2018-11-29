@@ -15,6 +15,8 @@ from typed_ast.ast3 import (
 
 from type_representation import (
     FunctionType, is_tuple, GenericType, Kind, Type, UNANNOTATED)
+import util as myutil
+
 
 A = TypeVar('A')  # pylint: disable=C0103
 B = TypeVar('B')  # pylint: disable=C0103
@@ -172,13 +174,15 @@ def get_type_annotations(filestring: str) -> List[t.Tuple[str, Type]]:
     return collector.defs
 
 
-def extract_type_annotations(infilename: str, outfilename: str) -> None:
+def extract_type_annotations(in_filename: str, out_filename: str) -> None:
     """Extract type annotations from input file to output file"""
-    with open(infilename, 'r') as infile:  # type: TextIO
+    with open(in_filename, 'r') as infile:  # type: TextIO
         types: List[t.Tuple[str, Type]] = get_type_annotations(infile.read())
 
-    with open(outfilename, 'w', newline='') as outfile:  # type: TextIO
-        csv.writer(outfile).writerows(types)
+    if types:
+        myutil.ensure_parents(out_filename)
+        with open(out_filename, 'w', newline='') as outfile:  # type: TextIO
+            csv.writer(outfile).writerows(types)
 
 
 if __name__ == "__main__":

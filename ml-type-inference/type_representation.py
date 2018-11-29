@@ -235,7 +235,7 @@ class NestedType(Type[T]):
     def __init__(self: 'NestedType[T]', parent: Type, typ: Type) -> None:
         self.parent = parent
         self.typ = typ
-        self.kind = Kind.combinde((self.parent.kind, self.typ.kind))
+        self.kind = Kind.combine((self.parent.kind, self.typ.kind))
 
     def __str__(self: 'NestedType[T]') -> str:
         return str(self.parent) + '.' + str(self.typ)
