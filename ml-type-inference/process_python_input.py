@@ -25,6 +25,9 @@ def get_name(name: AST) -> Optional[str]:
     """Given an AST tries to interpret it as a name"""
     if isinstance(name, Name):
         return name.id
+    if isinstance(name, Attribute):
+        module: Optional[str] = get_name(name.value)
+        return module + '.' + name.attr if module is not None else None
     return None
 
 
@@ -64,7 +67,7 @@ def read_type(node: Optional[AST]) -> Optional[str]:
     if isinstance(node, Name):
         return node.id
     if isinstance(node, NameConstant):
-        return node.value
+        return str(node.value)
     if isinstance(node, Attribute):
         module: Optional[str] = read_type(node.value)
         return module + '.' + node.attr if module is not None else None
@@ -118,7 +121,6 @@ class TypeCollector(NodeVisitor):
             self,
             node: FunctionDef) -> None:
         """Add the function definition node to the list"""
-        # TODO: handle args and kwargs, also Callable[..., type]
         args: Iterable[Optional[str]]\
             = (read_type(arg.annotation) for arg in node.args.args)
         arg_types: List[str] = [arg if arg is not None else ANY
@@ -128,20 +130,15 @@ class TypeCollector(NodeVisitor):
         self.defs.append((node.name,
                           'Callable[[' + ', '.join(arg_types) + '], '
                           + ret_type + ']'))  # noqa: W503
-        # TODO: interpret type comment with special function syntax
         # self.add_type(node.name, parse_type(node.type_comment))
         self.generic_visit(node)
 
     def visit_AsyncFunctionDef(  # pylint: disable=C0103
             self, n: AsyncFunctionDef):
         """Add the function definition node to the list"""
-        self.visit_FunctionDef(FunctionDef(
-            n.name,
-            n.args,
-            n.body,
-            n.decorator_list,
-            n.returns,
-            n.type_comment))
+        self.visit_FunctionDef(FunctionDef(n.name, n.args, n.body,
+                                           n.decorator_list, n.returns,
+                                           n.type_comment))
 
     def visit_For(  # pylint: disable=C0103
             self, node: For):
@@ -170,7 +167,6 @@ class TypeCollector(NodeVisitor):
 
     def visit_Assign(self, node: Assign):  # pylint: disable=C0103
         """Add the type from assignment comment to the list"""
-        # TODO: handle nested tuples properly
         self.add_types(get_names(node.targets), parse_types(node.type_comment))
         self.generic_visit(node)
 
@@ -213,4 +209,3 @@ if __name__ == "__main__":
 
     with open(ARGS.out, 'w', newline='') as outfile:  # type: TextIO
         csv.writer(outfile).writerows(types)
-
