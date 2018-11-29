@@ -185,5 +185,3 @@ if __name__ == "__main__":
 
     with open(ARGS.out, 'w', newline='') as outfile:  # type: TextIO
         csv.writer(outfile).writerows(types)
-
-    a, b = 1, 2  # type: int, float
