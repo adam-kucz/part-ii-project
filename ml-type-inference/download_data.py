@@ -62,7 +62,7 @@ def extract_annotations(data_dir: str) -> List[Tuple[str, Exception]]:
                 abs_name = os.path.join(root, name)
                 try:
                     extract_type_annotations(abs_name,
-                                             os.path.join(root, base, '.csv'))
+                                             os.path.join(root, base + '.csv'))
                 except (SyntaxError, UnicodeDecodeError) as exception:
                     exceptions.append((abs_name, exception))
     return exceptions
