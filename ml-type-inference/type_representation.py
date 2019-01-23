@@ -54,6 +54,13 @@ class Type(Generic[T], metaclass=ABCMeta):
     def __str__(self: 'Type') -> str:
         pass
 
+    def __eq__(self: 'Type', other: 'Type') -> bool:
+        """TODO: fix to handle generics correctly"""
+        return str(self) == str(other)
+
+    def __hash__(self: 'Type') -> int:
+        return hash(str(self))
+
     def __add__(self: 'Type[T]',
                 other: 'Type[S]') -> 'Type[Union[T, S]]':
         return cast(Type[Union[T, S]], Type.union([self, other]))
@@ -260,3 +267,4 @@ def is_tuple(typ: GenericType[T]) -> bool:
 NONE_TYPE: Type[None] = SimpleType('None')
 ANY_TYPE: Type[Any] = SimpleType('Any')
 UNANNOTATED: Type[Any] = SimpleType('_', Kind.EMPTY)
+UNKNOWN: Type[Any] = SimpleType('*', Kind.EMPTY)
