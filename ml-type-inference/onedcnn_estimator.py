@@ -78,7 +78,7 @@ def main(argv):
     # Prepare and fetch the data
     data_loader = data.DataLoader()
     data_loader.load_data()
-    
+
     (train_x, train_y), (validate_x, validate_y) = data_loader.get_data()
 
     # Feature columns describe how to use the input.
