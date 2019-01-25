@@ -1,81 +1,119 @@
 """TODO: describe"""
 from collections import Counter
-from typing import Dict, Tuple
+from typing import Tuple
 
+import numpy as np
 import pandas as pd
 import tensorflow as tf
 from dpu_utils.mlutils.vocabulary import Vocabulary
+from dpu_utils.mlutils.chartensorizer import CharTensorizer
 
+DATA_DIR = "~/synced/part-ii-project/data/sets/pairs_trivial"
+TRAIN_PATH = DATA_DIR + "/train.csv"
+VALIDATE_PATH = DATA_DIR + "/validate.csv"
+
+PERCENTAGE: float = 1.0  # 0.75
+IDENTIFIER_LENGTH: int = 12
 
 CSV_COLUMN_NAMES = ['identifier', 'type']
-TRAIN_PATH = "~/synced/part-ii-project/data/sets/train.csv"
-VALIDATE_PATH = "~/synced/part-ii-project/data/sets/validate.csv"
-
-PERCENTAGE: float = 0.99
+# COLUMNS = ['c' + str(i) for i in range(IDENTIFIER_LENGTH)] + ['type']
 
 
 class DataLoader:
     """TODO: class docstring"""
-    vocab: Vocabulary = Vocabulary()
-    train_x: pd.DataFrame
-    train_y: pd.Series
-    validate_x: pd.DataFrame
-    validate_y: pd.Series
+    vocab: Vocabulary
+    char_tensorizer: CharTensorizer
+    train_ds: Tuple
+    validate_ds: Tuple
 
-    def load_data(self, y_name='type'):
+    def __init__(self):
+        self.vocab = Vocabulary()
+        self.char_tensorizer = CharTensorizer(IDENTIFIER_LENGTH, False, False)
+
+    def _parse_csv(self, filename):
         """TODO: method docstring"""
-        train = pd.read_csv(TRAIN_PATH, names=CSV_COLUMN_NAMES, header=0)
-        self.train_x, train_y = train, train.pop(y_name)
+        dataframe = pd.read_csv(filename, names=CSV_COLUMN_NAMES, header=0)
+        # TODO: remove magic strings
+        # TODO: fix list, use numpy arrays if possible
+        char_arr = np.array(list(
+            self.char_tensorizer.tensorize_str(identifier)
+            for identifier in dataframe.pop('identifier')))
+        chars = dict(('char{}'.format(i), char_arr[:, i])
+                     for i in range(IDENTIFIER_LENGTH))
+        typs = dataframe.pop('type')
+        return chars, typs
+
+    def _as_dataset(self, chars, typs):
+        """TODO: method docstring"""
+        typs = typs.map(self.vocab.get_id_or_unk)
+        return (chars, typs)
+
+    def load_data(self):
+        """TODO: method docstring"""
+        train_chars, train_typs = self._parse_csv(TRAIN_PATH)
         included = 0
-        for typ, count in Counter(train_y).items():
+        for typ, count in Counter(train_typs).items():
             self.vocab.add_or_get_id(typ)
             included += count
-            if included / len(train_y) > PERCENTAGE:
+            if included / len(train_typs) > PERCENTAGE:
                 break
-        self.train_y = train_y.map(self.vocab.get_id_or_unk)
+        self.train_ds = self._as_dataset(train_chars, train_typs)
+        # print(self.train_ds)
 
-        validate = pd.read_csv(VALIDATE_PATH, names=CSV_COLUMN_NAMES, header=0)
-        self.validate_x, validate_y = validate, validate.pop(y_name)
-        self.validate_y = validate_y.map(self.vocab.get_id_or_unk)
+        self.validate_ds = self._as_dataset(*self._parse_csv(VALIDATE_PATH))
+        # print(self.validate_ds)
 
-    def get_num_classes(self) -> int:
-        """TODO: docstring"""
+        print(self.num_classes, "classes with", len(train_typs), "examples")
+
+    @property
+    def num_chars_in_vocabulary(self) -> int:
+        """TODO: docstring for num_chars_in_vocabulary"""
+        return self.char_tensorizer.num_chars_in_vocabulary()
+
+    @property
+    def num_classes(self) -> int:
+        """TODO: docstring for num_classes"""
         return len(self.vocab)
 
-    def get_data(self) -> Tuple[Tuple[Dict, Dict], Tuple[Dict, Dict]]:
-        """
-        Returns the types dataset
+    # def get_data(self) -> Tuple[Tuple[Dict, Dict], Tuple[Dict, Dict]]:
+    #     """
+    #     Returns the types dataset
 
-        as (train_x, train_y), (validate_x, validate_y).
-        """
-        return (self.train_x, self.train_y), (self.validate_x, self.validate_y)
+    #     as (train_x, train_y), (validate_x, validate_y).
+    #     """
+#     return (self.train_x, self.train_y), (self.validate_x, self.validate_y)
 
-    def train_input_fn(self, features, labels, batch_size):
+    def train_input_fn(self, batch_size):
         """An input function for training"""
         # Convert the inputs to a Dataset.
-        dataset = tf.data.Dataset.from_tensor_slices((dict(features), labels))
+        print("train_ds:\n", self.train_ds)
+        print("batch_size:\n", batch_size)
 
+        dataset = tf.data.Dataset.from_tensor_slices(self.train_ds)
+        # print("shape:\n", dataset.shape)
+        
         # Shuffle, repeat, and batch the examples.
-        dataset = dataset.shuffle(1000).repeat().batch(batch_size)
+        # TODO: change to epochs recognized through exceptions
+        assert batch_size is not None, "error: batch_size is None"  # nosec
+        return dataset.shuffle(1000).repeat().batch(batch_size)
 
-        # Return the dataset.
-        return dataset
+    def validate_input_fn(self, batch_size):
+        """An input function for validation"""
+        # Convert the inputs to a Dataset.
+        print("validate_ds:\n", self.validate_ds)
+        print("batch_size:\n", batch_size)
 
-    def eval_input_fn(self, features, labels, batch_size):
-        """An input function for evaluation or prediction"""
-        features = dict(features)
-        if labels is None:
-            # No labels, use only features.
-            inputs = features
-        else:
-            inputs = (features, labels)
+        dataset = tf.data.Dataset.from_tensor_slices(self.validate_ds)
 
-            # Convert the inputs to a Dataset.
-            dataset = tf.data.Dataset.from_tensor_slices(inputs)
+        # Batch the data.
+        assert batch_size is not None, "error: batch_size is None"  # nosec
+        return dataset.batch(batch_size)
 
-            # Batch the examples
-            assert batch_size is not None, "error: batch_size is None"  # nosec
-            dataset = dataset.batch(batch_size)
+    def predict_input_fn(self, features, batch_size):
+        """An input function for prediction"""
+        # Convert the inputs to a Dataset.
+        dataset = tf.data.Dataset.from_tensor_slices(dict(features))
 
-            # Return the dataset.
-            return dataset
+        # Returned batched Dataset.
+        assert batch_size is not None, "error: batch_size is None"  # nosec
+        return dataset.batch(batch_size)

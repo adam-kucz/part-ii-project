@@ -1,4 +1,4 @@
-"""TODO: describe"""
+"""TODO: describe module"""
 import argparse
 import tensorflow as tf
 
@@ -11,7 +11,9 @@ def my_model(features, labels, mode, params):
     """TODO: describe, 1D CNN with ... ."""
 
     # Create input layer.
+    # dimensions = batch_size x max_chars
     net = tf.feature_column.input_layer(features, params['feature_columns'])
+    
 
     # Create 1d convolutional layers.
     for conv_params in params['convolutional']:
@@ -66,7 +68,7 @@ def my_model(features, labels, mode, params):
 
 
 def main(argv):
-    """TODO: describe"""
+    """TODO: describe main"""
     # Get program arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', default=100, type=int,
@@ -79,18 +81,20 @@ def main(argv):
     data_loader = data.DataLoader()
     data_loader.load_data()
 
-    (train_x, train_y), (validate_x, validate_y) = data_loader.get_data()
-
     # Feature columns describe how to use the input.
-    my_feature_columns = []
-    for key in train_x.keys():
-        my_feature_columns.append(tf.feature_column.numeric_column(key=key))
+    feature_columns = []
+    for i in range(data.IDENTIFIER_LENGTH):
+        column = tf.feature_column.categorical_column_with_identity(
+            key='char{}'.format(i),
+            num_buckets=data_loader.num_chars_in_vocabulary)
+        column = tf.feature_column.indicator_column(column)
+        feature_columns.append(column)
 
-    # Build 5 hidden layer CNN
+    # Build a CNN with 5 hidden layers
     classifier = tf.estimator.Estimator(
         model_fn=my_model,
         params={
-            'feature_columns': my_feature_columns,
+            'feature_columns': feature_columns,
             # 3 convolutional layers
             'convolutional': [{'filters': 32, 'kernel_size': 5},
                               {'filters': 32, 'kernel_size': 5},
@@ -98,21 +102,19 @@ def main(argv):
             # 2 dense layers
             'dense': [64, 64],
             # Number of classes determined by data
-            'n_classes': data_loader.get_num_classes()
+            'n_classes': data_loader.num_classes
         })
 
     # Train the Model.
     classifier.train(
-        input_fn=lambda: data_loader.train_input_fn(train_x, train_y,
-                                                    args.batch_size),
+        input_fn=lambda: data_loader.train_input_fn(args.batch_size),
         steps=args.train_steps)
 
     # Evaluate the model.
     eval_result = classifier.evaluate(
-        input_fn=lambda: data_loader.eval_input_fn(validate_x, validate_y,
-                                                   args.batch_size))
+        input_fn=lambda: data_loader.validate_input_fn(args.batch_size))
 
-    print('\nTest set accuracy: {accuracy:0.3f}\n'.format(**eval_result))
+    print('\nValidate set accuracy: {accuracy:0.3f}\n'.format(**eval_result))
 
 
 if __name__ == '__main__':
