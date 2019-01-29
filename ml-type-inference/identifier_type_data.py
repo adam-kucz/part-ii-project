@@ -19,6 +19,7 @@ CSV_COLUMN_NAMES = ['identifier', 'type']
 # COLUMNS = ['c' + str(i) for i in range(IDENTIFIER_LENGTH)] + ['type']
 
 
+# TODO: change to use tf.data
 class DataLoader:
     """TODO: class docstring"""
     vocab: Vocabulary
@@ -75,15 +76,7 @@ class DataLoader:
         """TODO: docstring for num_classes"""
         return len(self.vocab)
 
-    # def get_data(self) -> Tuple[Tuple[Dict, Dict], Tuple[Dict, Dict]]:
-    #     """
-    #     Returns the types dataset
-
-    #     as (train_x, train_y), (validate_x, validate_y).
-    #     """
-#     return (self.train_x, self.train_y), (self.validate_x, self.validate_y)
-
-    def train_input_fn(self, batch_size):
+    def training_data(self, batch_size):
         """An input function for training"""
         # Convert the inputs to a Dataset.
         print("train_ds:\n", self.train_ds)
@@ -91,13 +84,14 @@ class DataLoader:
 
         dataset = tf.data.Dataset.from_tensor_slices(self.train_ds)
         # print("shape:\n", dataset.shape)
-        
-        # Shuffle, repeat, and batch the examples.
-        # TODO: change to epochs recognized through exceptions
-        assert batch_size is not None, "error: batch_size is None"  # nosec
-        return dataset.shuffle(1000).repeat().batch(batch_size)
 
-    def validate_input_fn(self, batch_size):
+        # Shuffle, repeat, and batch the examples.
+        assert batch_size is not None, "error: batch_size is None"  # nosec
+        dataset = dataset.shuffle(1000).batch(batch_size)
+        print("Dataset:\n{}".format(dataset))
+        return dataset
+
+    def validation_data(self, batch_size):
         """An input function for validation"""
         # Convert the inputs to a Dataset.
         print("validate_ds:\n", self.validate_ds)
@@ -109,7 +103,7 @@ class DataLoader:
         assert batch_size is not None, "error: batch_size is None"  # nosec
         return dataset.batch(batch_size)
 
-    def predict_input_fn(self, features, batch_size):
+    def prediction_data(self, features, batch_size):
         """An input function for prediction"""
         # Convert the inputs to a Dataset.
         dataset = tf.data.Dataset.from_tensor_slices(dict(features))

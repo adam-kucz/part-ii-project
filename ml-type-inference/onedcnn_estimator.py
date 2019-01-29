@@ -13,7 +13,6 @@ def my_model(features, labels, mode, params):
     # Create input layer.
     # dimensions = batch_size x max_chars
     net = tf.feature_column.input_layer(features, params['feature_columns'])
-    
 
     # Create 1d convolutional layers.
     for conv_params in params['convolutional']:

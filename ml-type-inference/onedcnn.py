@@ -1,80 +1,157 @@
 """TODO"""
-from typing import Mapping, Union
+import os
+from typing import Mapping
 
-from dpu_utils.mlutils import CharTensorizer
 import numpy as np
 import tensorflow as tf
 
-from type_conversion import TypeConverter
-
 
 class CNN1d:
-    """TODO"""
-    __class_num: int
-    __max_input_len: int
-    __type_converter: TypeConverter
-    __char_tensorizer: CharTensorizer
-    __hyperparameters: Mapping[str, Union[int, float]]
-    __text_characters: tf.Tensor
+    """TODO: CNN1d docstring"""
+    out_dir: str
+    features: tf.Tensor
+    labels: tf.Tensor
+    outputs: Mapping[str, tf.Tensor]
+    metrics: Mapping[str, tf.Tensor]
+    learning_rate: tf.Tensor
+    train_op: tf.Operation
+    summary: tf.Tensor
+    _sess: tf.Session
 
-    def __init__(self, max_input_len=40, class_num=20) -> None:
-        self.__hyperparameters = {}
-        self.__class_num = class_num
-        self.__max_input_len = max_input_len
+    def __init__(self, params, out_dir) -> None:
+        self.out_dir = out_dir
+        tf.train.create_global_step()
+        self._build_network(params)
+        self._sess = tf.Session()
 
-    def inference(self) -> None:
-        """Build the 1dCNN model
+    def _build_network(self, params):
+        # Create input layer.
+        # dimensions = batch_size x max_chars
+        self.features = tf.placeholder(tf.uint8,
+                                       shape=(None, params['identifier_len']),
+                                       name='features')
+        one_hot_chars = tf.one_hot(self.features,
+                                   depth=params['num_chars_in_vocab'])
 
-        """
-        self.__text_characters\
-            = tf.placeholder(dtype=tf.int32,
-                             shape=[None, self.__max_input_len],
-                             name='text_chars')
-        dep: int = self.__char_tensorizer.num_chars_in_vocabulary
-        characters_one_hot\
-            = tf.one_hot(self.__text_characters, depth=dep)
-        characters_one_hot = tf.expand_dims(characters_one_hot, dim=0)
+        # Create 1d convolutional layers.
+        with tf.name_scope("conv"):
+            tensor = one_hot_chars
+            for conv in params['convolutional']:
+                tensor = tf.layers.conv1d(inputs=tensor,
+                                          filters=conv['filters'],
+                                          kernel_size=conv['kernel_size'],
+                                          padding='valid',
+                                          use_bias=False,
+                                          activation=tf.nn.relu)
 
-        hyp: Mapping[str, str] = self.__hyperparameters
-        conv_l1_layer = tf.layers.Conv1D(filters=hyp['l1_filters'],
-                                         kernel_size=hyp['l1_kernel_size'],
+        # Create dense layers.
+        with tf.name_scope("dense"):
+            for dense in params['dense']:
+                tensor = tf.layers.dense(inputs=tensor,
+                                         units=dense['units'],
                                          activation=tf.nn.relu)
-        conv_l1 = conv_l1_layer(characters_one_hot)
 
-        conv_l2_layer = tf.layers.Conv1D(filters=hyp['l2_filters'],
-                                         kernel_size=hyp['l2_kernel_size'],
-                                         activation=tf.nn.relu)
-        self.conv_l2 = conv_l2_layer(conv_l1)
+        with tf.name_scope("output"):
+            # Compute logits (1 per class).
+            logits = tf.layers.dense(tensor, params['n_classes'],
+                                     activation=None)
+            predictions = tf.argmax(logits, 1)
+            self.outputs = {'logits': logits,
+                            'predictions': predictions}
 
-        type_targets = tf.placeholder(dtype=tf.int32,
-                                      shape=[None, self.__class_num])
-        self.types_one_hot = tf.one_hot(type_targets,
-                                        depth=self.__class_num + 1)
+        self.labels = tf.placeholder(tf.int32, shape=(None,))
 
-    def save(self) -> None:
-        pass
+        with tf.name_scope("metrics"):
+            loss = tf.losses.sparse_softmax_cross_entropy(
+                labels=self.labels,
+                logits=logits)
+            accuracy = tf.metrics.accuracy(labels=self.labels,
+                                           predictions=predictions,
+                                           name='acc_op')
+            self.metrics = {'accuracy': accuracy,
+                            'loss': loss}
 
-    def read(self, filename: str) -> None:
-        pass
+        # Write summary.
+        with tf.variable_scope("logging"):
+            for name, metric in self.metrics.items():
+                tf.summary.scalar(name, metric)
+            self.summary = tf.summary.merge_all()
 
-    def init_session(self) -> None:
-        pass
+        # Create training op.
+        self.learning_rate = tf.placeholder(tf.float32, shape=(),
+                                            name='learning_rate')
+        self.train_op = tf.train.AdagradOptimizer(self.learning_rate)\
+                                .minimize(loss, tf.train.get_global_step())
 
-    def run(self, identifier: str) -> None:
-        """TODO"""
-        tensorized: np.ndarray\
-            = self.__char_tensorizer.tensorize_str(identifier)
-        var_init = tf.global_variables_initializer()
-        table_init = tf.tables_initializer()
-        with tf.Session() as sess:
-            sess.run((var_init, table_init))
-            result: np.ndarray\
-                = sess.run(self.conv_l2,
-                           feed_dict={'text_chars': tensorized})
-            print(result)
+    def __enter__(self):
+        return self
 
-    def write_graph(self) -> None:
-        """TODO"""
-        writer = tf.summary.FileWriter('.')
-        writer.add_graph(tf.get_default_graph())
-        writer.flush()
+    def __exit__(self, *_):
+        self.close()
+
+    def close(self):
+        """Free resources used by the network"""
+        self._sess.close()
+
+    def train_step(self, features, labels, learning_rate, writer=None) -> None:
+        """TODO: train_step docstring"""
+        self._sess.run(tf.global_variables_initializer())
+        _, metrics, summary, step = self._sess.run(
+            [self.train_op, self.metrics,
+             self.summary, tf.train.get_global_step()],
+            feed_dict={self.learning_rate: learning_rate,
+                       self.features: features,
+                       self.labels: labels})
+        if writer:
+            writer.add_summary(summary, step)
+        return metrics
+
+    def train(self, num_epochs, batcher, learning_rate):
+        """TODO: train docstring"""
+        epoch_logs = []
+        summary_dir = os.path.join(self.out_dir, "summaries", "train")
+        with tf.summary.FileWriter(summary_dir, self._sess.graph) as writer:
+            for epoch in range(num_epochs):
+                epoch_metrics = {'accuracy': 0, 'loss': 0}
+                rate = learning_rate(epoch)
+                batches = batcher(epoch)
+                for batch_data in batches:
+                    batch_metrics = self.train_step(*batch_data, rate, writer)
+                    for key in batch_metrics:
+                        epoch_metrics[key] += batch_metrics[key] / len(batches)
+                epoch_logs.append(epoch_metrics)
+                writer.flush()
+        # TODO: consider changing into a generator
+        return epoch_logs
+
+    def test(self, features, labels) -> None:
+        """TODO: test docstring"""
+        self._sess.run(tf.global_variables_initializer())
+        return self._sess.run(self.metrics, feed_dict={self.features: features,
+                                                       self.labels: labels})
+
+    def predict(self, features) -> np.ndarray:
+        """TODO: predict docstring"""
+        self._sess.run(tf.global_variables_initializer())
+        outputs = self._sess.run(self.outputs,
+                                 feed_dict={self.features: features})
+        return {'class_ids': outputs['predictions'][:, tf.newaxis],
+                'probabilities': tf.nn.softmax(outputs['logits']),
+                'logits': outputs['logits']}
+
+    def save_checkpoint(self, max_num_checkpoints) -> None:
+        """Saves model with trained parameters"""
+        checkpoint_dir = os.path.abspath(os.path.join(self.out_dir,
+                                                      "checkpoints"))
+        if not os.path.exists(checkpoint_dir):
+            os.makedirs(checkpoint_dir)
+        checkpoint_prefix = os.path.join(checkpoint_dir, "model")
+        saver = tf.train.Saver(tf.global_variables(),
+                               max_to_keep=max_num_checkpoints)
+        saver.save(self._sess, checkpoint_prefix,
+                   global_step=tf.train.get_global_step().eval())
+
+    def restore_checkpoint(self, checkpoint: str) -> None:
+        """Reads saved model from file"""
+        saver = tf.train.Saver(tf.global_variables())
+        saver.restore(self._sess, checkpoint)
