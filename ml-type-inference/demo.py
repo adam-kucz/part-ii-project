@@ -5,14 +5,17 @@ import identifier_type_data as data
 from onedcnn import CNN1d
 
 
+IDENTIFIER_LENGTH = 15
+
+
 def main(num_epochs, batch_size=100, learn_rate=0.01):
     """TODO: describe main"""
     # Prepare and fetch the data
-    data_loader = data.DataLoader()
+    data_loader = data.DataLoader(IDENTIFIER_LENGTH)
     data_loader.load_data()
 
     # Build a CNN with 5 hidden layers
-    params = {'identifier_len': 12,
+    params = {'identifier_len': IDENTIFIER_LENGTH,
               'num_chars_in_vocab': data_loader.num_chars_in_vocabulary,
               'convolutional': [{'filters': 32, 'kernel_size': 5},
                                 {'filters': 32, 'kernel_size': 5},
@@ -21,11 +24,14 @@ def main(num_epochs, batch_size=100, learn_rate=0.01):
                         {'units': 64}],
               'n_classes': data_loader.num_classes}
 
+    def batch_supplier(_):
+        dataset = data_loader.training_data(batch_size)
+        # TODO: implement
+        return dataset
+
     with CNN1d(params, "./out") as network:
         # Train the Model.
-        network.train(num_epochs,
-                      lambda _: data_loader.training_data(batch_size),
-                      lambda _: learn_rate)
+        network.train(num_epochs, batch_supplier, lambda _: learn_rate)
 
         # Evaluate the model.
         metrics = network.test(*data_loader.validation_data(batch_size))

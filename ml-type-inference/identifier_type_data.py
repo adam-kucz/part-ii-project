@@ -13,7 +13,6 @@ TRAIN_PATH = DATA_DIR + "/train.csv"
 VALIDATE_PATH = DATA_DIR + "/validate.csv"
 
 PERCENTAGE: float = 1.0  # 0.75
-IDENTIFIER_LENGTH: int = 12
 
 CSV_COLUMN_NAMES = ['identifier', 'type']
 # COLUMNS = ['c' + str(i) for i in range(IDENTIFIER_LENGTH)] + ['type']
@@ -27,9 +26,9 @@ class DataLoader:
     train_ds: Tuple
     validate_ds: Tuple
 
-    def __init__(self):
+    def __init__(self, identifier_length):
         self.vocab = Vocabulary()
-        self.char_tensorizer = CharTensorizer(IDENTIFIER_LENGTH, False, False)
+        self.char_tensorizer = CharTensorizer(identifier_length, False, False)
 
     def _parse_csv(self, filename):
         """TODO: method docstring"""
@@ -40,7 +39,7 @@ class DataLoader:
             self.char_tensorizer.tensorize_str(identifier)
             for identifier in dataframe.pop('identifier')))
         chars = dict(('char{}'.format(i), char_arr[:, i])
-                     for i in range(IDENTIFIER_LENGTH))
+                     for i in range(self.char_tensorizer.max_char_length))
         typs = dataframe.pop('type')
         return chars, typs
 
@@ -88,7 +87,7 @@ class DataLoader:
         # Shuffle, repeat, and batch the examples.
         assert batch_size is not None, "error: batch_size is None"  # nosec
         dataset = dataset.shuffle(1000).batch(batch_size)
-        print("Dataset:\n{}".format(dataset))
+        print("Dataset shape: {}".format(dataset.output_shapes))
         return dataset
 
     def validation_data(self, batch_size):

@@ -32,6 +32,8 @@ class CNN1d:
                                        name='features')
         one_hot_chars = tf.one_hot(self.features,
                                    depth=params['num_chars_in_vocab'])
+        print("Shape of features: {}, one_hot: {}"
+              .format(self.features.shape, one_hot_chars.shape))
 
         # Create 1d convolutional layers.
         with tf.name_scope("conv"):
@@ -43,25 +45,33 @@ class CNN1d:
                                           padding='valid',
                                           use_bias=False,
                                           activation=tf.nn.relu)
+                print("Shape of tensor after convolution: {}"
+                      .format(tensor.shape))
 
         # Create dense layers.
         with tf.name_scope("dense"):
+            tensor = tf.layers.flatten(tensor)
             for dense in params['dense']:
                 tensor = tf.layers.dense(inputs=tensor,
                                          units=dense['units'],
                                          activation=tf.nn.relu)
+                print("Shape of tensor after dense: {}".format(tensor.shape))
 
         with tf.name_scope("output"):
             # Compute logits (1 per class).
             logits = tf.layers.dense(tensor, params['n_classes'],
                                      activation=None)
             predictions = tf.argmax(logits, 1)
+            print("Shape of logits: {}, predictions: {}"
+                  .format(logits.shape, predictions.shape))
             self.outputs = {'logits': logits,
                             'predictions': predictions}
 
         self.labels = tf.placeholder(tf.int32, shape=(None,))
 
         with tf.name_scope("metrics"):
+            print("Shape of labels: {}, logits: {}"
+                  .format(self.labels.shape, logits.shape))
             loss = tf.losses.sparse_softmax_cross_entropy(
                 labels=self.labels,
                 logits=logits)
