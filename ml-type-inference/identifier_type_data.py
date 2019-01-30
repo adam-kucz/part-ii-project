@@ -15,7 +15,6 @@ VALIDATE_PATH = DATA_DIR + "/validate.csv"
 PERCENTAGE: float = 1.0  # 0.75
 
 CSV_COLUMN_NAMES = ['identifier', 'type']
-# COLUMNS = ['c' + str(i) for i in range(IDENTIFIER_LENGTH)] + ['type']
 
 
 # TODO: change to use tf.data
@@ -38,10 +37,10 @@ class DataLoader:
         char_arr = np.array(list(
             self.char_tensorizer.tensorize_str(identifier)
             for identifier in dataframe.pop('identifier')))
-        chars = dict(('char{}'.format(i), char_arr[:, i])
-                     for i in range(self.char_tensorizer.max_char_length))
+        # chars = dict(('char{}'.format(i), char_arr[:, i])
+        #              for i in range(self.char_tensorizer.max_char_length))
         typs = dataframe.pop('type')
-        return chars, typs
+        return char_arr, typs
 
     def _as_dataset(self, chars, typs):
         """TODO: method docstring"""
@@ -58,7 +57,7 @@ class DataLoader:
             if included / len(train_typs) > PERCENTAGE:
                 break
         self.train_ds = self._as_dataset(train_chars, train_typs)
-        # print(self.train_ds)
+        print(self.train_ds)
 
         self.validate_ds = self._as_dataset(*self._parse_csv(VALIDATE_PATH))
         # print(self.validate_ds)
@@ -78,8 +77,8 @@ class DataLoader:
     def training_data(self, batch_size):
         """An input function for training"""
         # Convert the inputs to a Dataset.
-        print("train_ds:\n", self.train_ds)
-        print("batch_size:\n", batch_size)
+        # print("train_ds:\n", self.train_ds)
+        # print("batch_size:\n", batch_size)
 
         dataset = tf.data.Dataset.from_tensor_slices(self.train_ds)
         # print("shape:\n", dataset.shape)
@@ -87,14 +86,14 @@ class DataLoader:
         # Shuffle, repeat, and batch the examples.
         assert batch_size is not None, "error: batch_size is None"  # nosec
         dataset = dataset.shuffle(1000).batch(batch_size)
-        print("Dataset shape: {}".format(dataset.output_shapes))
+        # print("Dataset shape: {}".format(dataset.output_shapes))
         return dataset
 
     def validation_data(self, batch_size):
         """An input function for validation"""
         # Convert the inputs to a Dataset.
-        print("validate_ds:\n", self.validate_ds)
-        print("batch_size:\n", batch_size)
+        # print("validate_ds:\n", self.validate_ds)
+        # print("batch_size:\n", batch_size)
 
         dataset = tf.data.Dataset.from_tensor_slices(self.validate_ds)
 

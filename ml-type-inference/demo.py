@@ -17,26 +17,27 @@ def main(num_epochs, batch_size=100, learn_rate=0.01):
     # Build a CNN with 5 hidden layers
     params = {'identifier_len': IDENTIFIER_LENGTH,
               'num_chars_in_vocab': data_loader.num_chars_in_vocabulary,
-              'convolutional': [{'filters': 32, 'kernel_size': 5},
-                                {'filters': 32, 'kernel_size': 5},
+              'convolutional': [# {'filters': 32, 'kernel_size': 5},
+                                # {'filters': 32, 'kernel_size': 5},
                                 {'filters': 32, 'kernel_size': 3}],
-              'dense': [{'units': 64},
-                        {'units': 64}],
+              'dense': [# {'units': 64},
+                        {'units': 16}],
               'n_classes': data_loader.num_classes}
-
-    def batch_supplier(_):
-        dataset = data_loader.training_data(batch_size)
-        # TODO: implement
-        return dataset
 
     with CNN1d(params, "./out") as network:
         # Train the Model.
-        network.train(num_epochs, batch_supplier, lambda _: learn_rate)
+        iterator = data_loader.training_data(batch_size)\
+                              .make_initializable_iterator()
+        network.train(num_epochs, iterator, lambda _: learn_rate)
 
         # Evaluate the model.
-        metrics = network.test(*data_loader.validation_data(batch_size))
+        validation_data = data_loader.validation_data(batch_size)\
+                                     .make_one_shot_iterator()\
+                                     .get_next()
+        metrics = network.test(validation_data)
 
-        print('\nValidate set accuracy: {accuracy:0.3f}\n'.format(**metrics))
+        print('\nValidate set accuracy: {accuracy:0.3f}, loss: {loss:0.3f}\n'
+              .format(**metrics))
 
 
 if __name__ == '__main__':
@@ -44,8 +45,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()  # pylint: disable=invalid-name
     parser.add_argument('--batch_size', default=100, type=int,
                         help='batch size')
-    parser.add_argument('--train_steps', default=1000, type=int,
-                        help='number of training steps')
+    parser.add_argument('--train_epochs', default=20, type=int,
+                        help='number of training epochs')
+    parser.add_argument('--learning_rate', default=0.1, type=float,
+                        help='learning rate for the AdagradOptimizer')
     args = parser.parse_args()  # pylint: disable=invalid-name
 
-    main(args.train_steps, args.batch_size)
+    main(args.train_epochs, args.batch_size, args.learning_rate)

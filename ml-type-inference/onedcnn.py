@@ -1,6 +1,7 @@
 """TODO"""
 import os
 from typing import Mapping
+import sys
 
 import numpy as np
 import tensorflow as tf
@@ -23,6 +24,7 @@ class CNN1d:
         tf.train.create_global_step()
         self._build_network(params)
         self._sess = tf.Session()
+        self._sess.run(tf.global_variables_initializer())
 
     def _build_network(self, params):
         # Create input layer.
@@ -75,9 +77,9 @@ class CNN1d:
             loss = tf.losses.sparse_softmax_cross_entropy(
                 labels=self.labels,
                 logits=logits)
-            accuracy = tf.metrics.accuracy(labels=self.labels,
-                                           predictions=predictions,
-                                           name='acc_op')
+            _, accuracy = tf.metrics.accuracy(labels=self.labels,
+                                              predictions=predictions,
+                                              name='acc_op')
             self.metrics = {'accuracy': accuracy,
                             'loss': loss}
 
@@ -90,6 +92,10 @@ class CNN1d:
         # Create training op.
         self.learning_rate = tf.placeholder(tf.float32, shape=(),
                                             name='learning_rate')
+        # print_outs = tf.print("outputs:", self.outputs, ", pred_shape:",
+        #                       tf.shape(self.outputs['predictions']),
+        #                       output_stream=sys.stdout, summarize=-1)
+        # with tf.control_dependencies([print_outs]):
         self.train_op = tf.train.AdagradOptimizer(self.learning_rate)\
                                 .minimize(loss, tf.train.get_global_step())
 
@@ -105,7 +111,6 @@ class CNN1d:
 
     def train_step(self, features, labels, learning_rate, writer=None) -> None:
         """TODO: train_step docstring"""
-        self._sess.run(tf.global_variables_initializer())
         _, metrics, summary, step = self._sess.run(
             [self.train_op, self.metrics,
              self.summary, tf.train.get_global_step()],
@@ -116,33 +121,44 @@ class CNN1d:
             writer.add_summary(summary, step)
         return metrics
 
-    def train(self, num_epochs, batcher, learning_rate):
+    def train(self, num_epochs, iterator, learning_rate):
         """TODO: train docstring"""
         epoch_logs = []
         summary_dir = os.path.join(self.out_dir, "summaries", "train")
         with tf.summary.FileWriter(summary_dir, self._sess.graph) as writer:
+            tensor = iterator.get_next()
             for epoch in range(num_epochs):
-                epoch_metrics = {'accuracy': 0, 'loss': 0}
+                epoch_metrics = {'accuracy': 0, 'loss': 0, 'num_batches': 0}
                 rate = learning_rate(epoch)
-                batches = batcher(epoch)
-                for batch_data in batches:
-                    batch_metrics = self.train_step(*batch_data, rate, writer)
-                    for key in batch_metrics:
-                        epoch_metrics[key] += batch_metrics[key] / len(batches)
+                # restart accuracy calculation
+                self._sess.run(tf.local_variables_initializer())
+                self._sess.run(iterator.initializer)
+                while True:
+                    try:
+                        features, labels = self._sess.run(tensor)
+                        batch_metrics = self.train_step(features, labels,
+                                                        rate, writer)
+                        for key, val in batch_metrics.items():
+                            epoch_metrics[key] += val
+                        epoch_metrics['num_batches'] += 1
+                    except tf.errors.OutOfRangeError:
+                        break
+                for key in epoch_metrics:
+                    epoch_metrics[key] /= epoch_metrics['num_batches']
                 epoch_logs.append(epoch_metrics)
                 writer.flush()
         # TODO: consider changing into a generator
         return epoch_logs
 
-    def test(self, features, labels) -> None:
+    def test(self, data) -> None:
         """TODO: test docstring"""
-        self._sess.run(tf.global_variables_initializer())
+        self._sess.run(tf.local_variables_initializer())
+        features, labels = self._sess.run(data)
         return self._sess.run(self.metrics, feed_dict={self.features: features,
                                                        self.labels: labels})
 
     def predict(self, features) -> np.ndarray:
         """TODO: predict docstring"""
-        self._sess.run(tf.global_variables_initializer())
         outputs = self._sess.run(self.outputs,
                                  feed_dict={self.features: features})
         return {'class_ids': outputs['predictions'][:, tf.newaxis],
