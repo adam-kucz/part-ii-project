@@ -1,7 +1,8 @@
 """TODO"""
 import os
 from typing import Mapping
-import sys
+# pylint: disable=unused-import
+import sys  # noqa: F401
 
 import numpy as np
 import tensorflow as tf
@@ -63,9 +64,7 @@ class CNN1d:
             # Compute logits (1 per class).
             logits = tf.layers.dense(tensor, params['n_classes'],
                                      activation=None)
-            predictions = tf.argmax(logits, 1)
-            print("Shape of logits: {}, predictions: {}"
-                  .format(logits.shape, predictions.shape))
+            predictions = tf.argmax(logits, 1, output_type=tf.int32)
             self.outputs = {'logits': logits,
                             'predictions': predictions}
 
@@ -80,7 +79,13 @@ class CNN1d:
             _, accuracy = tf.metrics.accuracy(labels=self.labels,
                                               predictions=predictions,
                                               name='acc_op')
-            self.metrics = {'accuracy': accuracy,
+            print("Pred: {}, labels: {}".format(predictions, self.labels))
+            useful = tf.logical_and(tf.not_equal(self.labels, 0),
+                                    tf.equal(predictions, self.labels))
+            real_accuracy = tf.reduce_mean(tf.cast(useful, "float"),
+                                           name="real_accuracy")
+            self.metrics = {'real_accuracy': real_accuracy,
+                            'accuracy': accuracy,
                             'loss': loss}
 
         # Write summary.
@@ -123,12 +128,14 @@ class CNN1d:
 
     def train(self, num_epochs, iterator, learning_rate):
         """TODO: train docstring"""
+        # TODO: fix metrics mess
         epoch_logs = []
         summary_dir = os.path.join(self.out_dir, "summaries", "train")
         with tf.summary.FileWriter(summary_dir, self._sess.graph) as writer:
             tensor = iterator.get_next()
             for epoch in range(num_epochs):
-                epoch_metrics = {'accuracy': 0, 'loss': 0, 'num_batches': 0}
+                epoch_metrics = dict((key, 0) for key in self.metrics)
+                epoch_metrics['num_batches'] = 0
                 rate = learning_rate(epoch)
                 # restart accuracy calculation
                 self._sess.run(tf.local_variables_initializer())
@@ -153,9 +160,14 @@ class CNN1d:
     def test(self, data) -> None:
         """TODO: test docstring"""
         self._sess.run(tf.local_variables_initializer())
-        features, labels = self._sess.run(data)
-        return self._sess.run(self.metrics, feed_dict={self.features: features,
-                                                       self.labels: labels})
+        while True:
+            try:
+                features, labels = self._sess.run(data)
+                metrics = self._sess.run(self.metrics,
+                                         feed_dict={self.features: features,
+                                                    self.labels: labels})
+            except tf.errors.OutOfRangeError:
+                break
 
     def predict(self, features) -> np.ndarray:
         """TODO: predict docstring"""

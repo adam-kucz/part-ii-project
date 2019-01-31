@@ -12,16 +12,19 @@ def main(num_epochs, batch_size=100, learn_rate=0.01):
     """TODO: describe main"""
     # Prepare and fetch the data
     data_loader = data.DataLoader(IDENTIFIER_LENGTH)
-    data_loader.load_data()
+    train_dataset = data_loader.train_dataset
+    print("Train data: (type: {})\n{}"
+          .format(type(train_dataset), train_dataset))
+    return
 
     # Build a CNN with 5 hidden layers
     params = {'identifier_len': IDENTIFIER_LENGTH,
               'num_chars_in_vocab': data_loader.num_chars_in_vocabulary,
-              'convolutional': [# {'filters': 32, 'kernel_size': 5},
-                                # {'filters': 32, 'kernel_size': 5},
+              'convolutional': [{'filters': 32, 'kernel_size': 5},
+                                {'filters': 32, 'kernel_size': 5},
                                 {'filters': 32, 'kernel_size': 3}],
-              'dense': [# {'units': 64},
-                        {'units': 16}],
+              'dense': [{'units': 64},
+                        {'units': 64}],
               'n_classes': data_loader.num_classes}
 
     with CNN1d(params, "./out") as network:
@@ -36,7 +39,8 @@ def main(num_epochs, batch_size=100, learn_rate=0.01):
                                      .get_next()
         metrics = network.test(validation_data)
 
-        print('\nValidate set accuracy: {accuracy:0.3f}, loss: {loss:0.3f}\n'
+        print(('\nValidate set accuracy: {accuracy:0.3f}, ' +
+               'real accuracy: {real_accuracy:0.3f}, loss: {loss:0.3f}\n')
               .format(**metrics))
 
 
