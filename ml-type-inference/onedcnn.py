@@ -1,18 +1,20 @@
 """TODO"""
 import os
-from typing import Mapping
+from typing import Callable, Mapping
 # pylint: disable=unused-import
 import sys  # noqa: F401
 
-import numpy as np
 import tensorflow as tf
+
+from identifier_type_data import DataLoader
 
 
 class CNN1d:
     """TODO: CNN1d docstring"""
     out_dir: str
-    features: tf.Tensor
-    labels: tf.Tensor
+    train_iter: tf.data.Iterator
+    val_iter: tf.data.Iterator
+    iter_handle: tf.Tensor
     outputs: Mapping[str, tf.Tensor]
     metrics: Mapping[str, tf.Tensor]
     learning_rate: tf.Tensor
@@ -22,21 +24,31 @@ class CNN1d:
 
     def __init__(self, params, out_dir) -> None:
         self.out_dir = out_dir
+        self._loader = DataLoader(params['identifier_len'])
+        self._data_pipeline(params)
         tf.train.create_global_step()
         self._build_network(params)
         self._sess = tf.Session()
-        self._sess.run(tf.global_variables_initializer())
+        self._sess.run(tf.initializers.global_variables())
+        self._sess.run(tf.initializers.tables_initializer())
+
+    def _data_pipeline(self, params):
+        # TODO: consider moving datasets
+        train_dataset = self._loader.read_dataset(params['train_filepath'])
+        val_dataset = self._loader.read_dataset(params['validate_filepath'])
+        self.train_iter = train_dataset.shuffle(1000)\
+                                       .batch(params['batch_size'])\
+                                       .make_initializable_iterator()
+        self.val_iter = val_dataset.batch(params['batch_size'])\
+                                   .make_initializable_iterator()
 
     def _build_network(self, params):
-        # Create input layer.
-        # dimensions = batch_size x max_chars
-        self.features = tf.placeholder(tf.uint8,
-                                       shape=(None, params['identifier_len']),
-                                       name='features')
-        one_hot_chars = tf.one_hot(self.features,
-                                   depth=params['num_chars_in_vocab'])
-        print("Shape of features: {}, one_hot: {}"
-              .format(self.features.shape, one_hot_chars.shape))
+        # Get input tensors.
+        # one_hot_chars.shape = batch_size x max_chars x chars_in_vocab
+        self.iter_handle, one_hot_chars, labels\
+            = self._loader.handle_to_input_tensors(params['batch_size'])
+        print("Shape of one_hot: {}, labels: {}"
+              .format(one_hot_chars.shape, labels.shape))
 
         # Create 1d convolutional layers.
         with tf.name_scope("conv"):
@@ -62,26 +74,23 @@ class CNN1d:
 
         with tf.name_scope("output"):
             # Compute logits (1 per class).
-            logits = tf.layers.dense(tensor, params['n_classes'],
+            logits = tf.layers.dense(tensor, len(self._loader.vocab) + 1,
                                      activation=None)
             predictions = tf.argmax(logits, 1, output_type=tf.int32)
             self.outputs = {'logits': logits,
                             'predictions': predictions}
 
-        self.labels = tf.placeholder(tf.int32, shape=(None,))
-
         with tf.name_scope("metrics"):
             print("Shape of labels: {}, logits: {}"
-                  .format(self.labels.shape, logits.shape))
+                  .format(labels.shape, logits.shape))
             loss = tf.losses.sparse_softmax_cross_entropy(
-                labels=self.labels,
-                logits=logits)
-            _, accuracy = tf.metrics.accuracy(labels=self.labels,
+                labels=labels, logits=logits)
+            _, accuracy = tf.metrics.accuracy(labels=labels,
                                               predictions=predictions,
                                               name='acc_op')
-            print("Pred: {}, labels: {}".format(predictions, self.labels))
-            useful = tf.logical_and(tf.not_equal(self.labels, 0),
-                                    tf.equal(predictions, self.labels))
+            print("Pred: {}, labels: {}".format(predictions, labels))
+            useful = tf.logical_and(tf.not_equal(labels, 0),
+                                    tf.equal(predictions, labels))
             real_accuracy = tf.reduce_mean(tf.cast(useful, "float"),
                                            name="real_accuracy")
             self.metrics = {'real_accuracy': real_accuracy,
@@ -114,68 +123,64 @@ class CNN1d:
         """Free resources used by the network"""
         self._sess.close()
 
-    def train_step(self, features, labels, learning_rate, writer=None) -> None:
+    def train_step(self, handle, learning_rate, writer=None) -> None:
         """TODO: train_step docstring"""
         _, metrics, summary, step = self._sess.run(
             [self.train_op, self.metrics,
              self.summary, tf.train.get_global_step()],
-            feed_dict={self.learning_rate: learning_rate,
-                       self.features: features,
-                       self.labels: labels})
+            feed_dict={self.iter_handle: handle,
+                       self.learning_rate: learning_rate})
         if writer:
             writer.add_summary(summary, step)
         return metrics
 
-    def train(self, num_epochs, iterator, learning_rate):
-        """TODO: train docstring"""
-        # TODO: fix metrics mess
-        epoch_logs = []
-        summary_dir = os.path.join(self.out_dir, "summaries", "train")
-        with tf.summary.FileWriter(summary_dir, self._sess.graph) as writer:
-            tensor = iterator.get_next()
-            for epoch in range(num_epochs):
-                epoch_metrics = dict((key, 0) for key in self.metrics)
-                epoch_metrics['num_batches'] = 0
-                rate = learning_rate(epoch)
-                # restart accuracy calculation
-                self._sess.run(tf.local_variables_initializer())
-                self._sess.run(iterator.initializer)
-                while True:
-                    try:
-                        features, labels = self._sess.run(tensor)
-                        batch_metrics = self.train_step(features, labels,
-                                                        rate, writer)
-                        for key, val in batch_metrics.items():
-                            epoch_metrics[key] += val
-                        epoch_metrics['num_batches'] += 1
-                    except tf.errors.OutOfRangeError:
-                        break
-                for key in epoch_metrics:
-                    epoch_metrics[key] /= epoch_metrics['num_batches']
-                epoch_logs.append(epoch_metrics)
-                writer.flush()
-        # TODO: consider changing into a generator
-        return epoch_logs
-
-    def test(self, data) -> None:
-        """TODO: test docstring"""
+    def run_epoch(self, runner: Callable[[], Mapping[str, float]])\
+            -> Mapping[str, float]:
+        """Runs a single epoch where the """
+        metrics = dict((key, 0) for key in self.metrics)
+        num_batches = 0
+        # restart accuracy calculation
         self._sess.run(tf.local_variables_initializer())
         while True:
             try:
-                features, labels = self._sess.run(data)
-                metrics = self._sess.run(self.metrics,
-                                         feed_dict={self.features: features,
-                                                    self.labels: labels})
+                batch_metrics = runner()
+                num_batches += 1
+                for key, val in batch_metrics.items():
+                    metrics[key] += val
             except tf.errors.OutOfRangeError:
-                break
+                for key in metrics:
+                    metrics[key] /= num_batches
+                return metrics
 
-    def predict(self, features) -> np.ndarray:
-        """TODO: predict docstring"""
-        outputs = self._sess.run(self.outputs,
-                                 feed_dict={self.features: features})
-        return {'class_ids': outputs['predictions'][:, tf.newaxis],
-                'probabilities': tf.nn.softmax(outputs['logits']),
-                'logits': outputs['logits']}
+    def train(self, num_epochs, learning_rate):
+        """TODO: train docstring"""
+        # TODO: fix metrics mess
+        summary_dir = os.path.join(self.out_dir, "summaries", "train")
+        with tf.summary.FileWriter(summary_dir, self._sess.graph) as writer:
+            for epoch in range(num_epochs):
+                self._sess.run(self.train_iter.initializer)
+                metrics = self.run_epoch(lambda: self.train_step(
+                    self.train_iter.string_handle(),
+                    learning_rate(epoch),  # pylint: disable=cell-var-from-loop
+                    writer))
+                writer.flush()
+                yield metrics
+
+    def test(self) -> Mapping[str, float]:
+        """TODO: test docstring"""
+        self._sess.run(self.val_iter.initializer)
+        return self.run_epoch(lambda: self._sess.run(
+            self.metrics,
+            feed_dict={self.iter_handle: self.val_iter.string_handle()}))
+
+    # TODO: rewrite with iterator handles
+    # def predict(self, features) -> np.ndarray:
+    #     """TODO: predict docstring"""
+    #     outputs = self._sess.run(self.outputs,
+    #                              feed_dict={self.features: features})
+    #     return {'class_ids': outputs['predictions'][:, tf.newaxis],
+    #             'probabilities': tf.nn.softmax(outputs['logits']),
+    #             'logits': outputs['logits']}
 
     def save_checkpoint(self, max_num_checkpoints) -> None:
         """Saves model with trained parameters"""

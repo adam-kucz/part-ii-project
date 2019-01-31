@@ -1,4 +1,5 @@
-"""TODO: describe"""
+"""TODO: identifier_type_data module docstring"""
+import os
 from typing import Any, List, Tuple
 
 import tensorflow as tf
@@ -7,10 +8,8 @@ from tensorflow.feature_column import (  # pylint: disable=import-error
     indicator_column)
 from dpu_utils.mlutils.chartensorizer import CharTensorizer
 
-DATA_DIR = "/home/acalc79/synced/part-ii-project/data/sets/pairs"
-VOCABULARY_PATH = DATA_DIR + "/vocab.csv"
-# TRAIN_PATH = DATA_DIR + "/train.csv"
-# VALIDATE_PATH = DATA_DIR + "/validate.csv"
+DIR = "/home/acalc79/synced/part-ii-project/data/sets/pairs"
+VOCABULARY_PATH = os.path.join(DIR, "vocab.csv")
 
 
 class DataLoader:
@@ -59,20 +58,18 @@ class DataLoader:
 
         return dataset.map(transform if labelled else self._str_to_chars)
 
-    def process_dataset(self, dataset, batch_size, labelled=True):
-        iterator = dataset.batch(batch_size).make_initializable_iterator()
-        chars = iterator.get_next()
-        if labelled:
-            chars, typ = chars
-        features = {}
+    def handle_to_input_tensors(self, batch_size):
+        """TODO: process_dataset docstring"""
+        handle = tf.placeholder(tf.string, shape=[])
+        iterator = tf.data.Iterator.from_string_handle(
+            handle, (tf.string, tf.string), ([batch_size], [batch_size]))
+        chars, typ = iterator.get_next()
+        features = {'type': typ}
         for i, name in enumerate(self.char_col_names):
             features[name] = chars[i]
         char_input = tf.feature_column.input_layer(features, self.char_cols)
-        if not labelled:
-            return iterator, char_input
-        features['type'] = typ
         labels = tf.feature_column.input_layer(features, self.typ_col)
-        return iterator, char_input, labels
+        return handle, char_input, labels
 
     @property
     def num_chars_in_vocabulary(self) -> int:
