@@ -10,22 +10,24 @@ VALIDATE_PATH = os.path.join(data.DIR, "validate.csv")
 IDENTIFIER_LENGTH = 15
 
 
-def main(num_epochs, batch_size=100, learn_rate=0.01):
+def main(num_epochs, batch_size, learn_rate):
     """TODO: describe main"""
     # Build a CNN with 5 hidden layers
     params = {'train_filepath': TRAIN_PATH,
               'validate_filepath': VALIDATE_PATH,
               'identifier_len': IDENTIFIER_LENGTH,
               'batch_size': batch_size,
-              'convolutional': [{'filters': 32, 'kernel_size': 5},
-                                {'filters': 32, 'kernel_size': 5},
+              'convolutional': [{'filters': 32, 'kernel_size': 3},
+                                {'filters': 32, 'kernel_size': 3},
+                                {'filters': 32, 'kernel_size': 3},
                                 {'filters': 32, 'kernel_size': 3}],
-              'dense': [{'units': 64},
-                        {'units': 64}]}
+              'dense': [{'units': 32},
+                        {'units': 32},
+                        {'units': 32}]}
 
     with CNN1d(params, "./out") as network:
         # Train the Model.
-        network.train(num_epochs, lambda _: learn_rate)
+        [metric for metric in network.train(num_epochs, lambda _: learn_rate)]
 
         # Evaluate the model.
         metrics = network.test()

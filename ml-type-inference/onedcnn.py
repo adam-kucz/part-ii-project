@@ -45,9 +45,10 @@ class CNN1d:
     def _build_network(self, params):
         # Get input tensors.
         # one_hot_chars.shape = batch_size x max_chars x chars_in_vocab
-        self.iter_handle, one_hot_chars, labels\
+        self.iter_handle, one_hot_chars, one_hot_labels\
             = self._loader.handle_to_input_tensors(params['batch_size'])
-        print("Shape of one_hot: {}, labels: {}"
+        labels = tf.math.argmax(one_hot_labels, 1)
+        print("Shape of one_hot_chars: {}, labels: {}"
               .format(one_hot_chars.shape, labels.shape))
 
         # Create 1d convolutional layers.
@@ -76,20 +77,18 @@ class CNN1d:
             # Compute logits (1 per class).
             logits = tf.layers.dense(tensor, len(self._loader.vocab) + 1,
                                      activation=None)
-            predictions = tf.argmax(logits, 1, output_type=tf.int32)
+            predictions = tf.argmax(logits, 1)
             self.outputs = {'logits': logits,
                             'predictions': predictions}
 
         with tf.name_scope("metrics"):
             print("Shape of labels: {}, logits: {}"
                   .format(labels.shape, logits.shape))
-            loss = tf.losses.sparse_softmax_cross_entropy(
-                labels=labels, logits=logits)
+            loss = tf.losses.softmax_cross_entropy(one_hot_labels, logits)
             _, accuracy = tf.metrics.accuracy(labels=labels,
                                               predictions=predictions,
                                               name='acc_op')
-            print("Pred: {}, labels: {}".format(predictions, labels))
-            useful = tf.logical_and(tf.not_equal(labels, 0),
+            useful = tf.logical_and(tf.not_equal(one_hot_labels[:, -1], 1),
                                     tf.equal(predictions, labels))
             real_accuracy = tf.reduce_mean(tf.cast(useful, "float"),
                                            name="real_accuracy")
@@ -97,8 +96,11 @@ class CNN1d:
                             'accuracy': accuracy,
                             'loss': loss}
 
+        # print_op = tf.print("labels: ", labels, "outputs:", self.outputs,
+        #                     output_stream=sys.stdout)
         # Write summary.
         with tf.variable_scope("logging"):
+            # tf.control_dependencies([print_op]):  # noqa: E127
             for name, metric in self.metrics.items():
                 tf.summary.scalar(name, metric)
             self.summary = tf.summary.merge_all()
@@ -126,8 +128,8 @@ class CNN1d:
     def train_step(self, handle, learning_rate, writer=None) -> None:
         """TODO: train_step docstring"""
         _, metrics, summary, step = self._sess.run(
-            [self.train_op, self.metrics,
-             self.summary, tf.train.get_global_step()],
+            (self.train_op, self.metrics,
+             self.summary, tf.train.get_global_step()),
             feed_dict={self.iter_handle: handle,
                        self.learning_rate: learning_rate})
         if writer:
@@ -157,10 +159,11 @@ class CNN1d:
         # TODO: fix metrics mess
         summary_dir = os.path.join(self.out_dir, "summaries", "train")
         with tf.summary.FileWriter(summary_dir, self._sess.graph) as writer:
+            handle = self._sess.run(self.train_iter.string_handle())
             for epoch in range(num_epochs):
                 self._sess.run(self.train_iter.initializer)
                 metrics = self.run_epoch(lambda: self.train_step(
-                    self.train_iter.string_handle(),
+                    handle,
                     learning_rate(epoch),  # pylint: disable=cell-var-from-loop
                     writer))
                 writer.flush()
@@ -169,9 +172,10 @@ class CNN1d:
     def test(self) -> Mapping[str, float]:
         """TODO: test docstring"""
         self._sess.run(self.val_iter.initializer)
+        handle = self._sess.run(self.val_iter.string_handle())
         return self.run_epoch(lambda: self._sess.run(
             self.metrics,
-            feed_dict={self.iter_handle: self.val_iter.string_handle()}))
+            feed_dict={self.iter_handle: handle}))
 
     # TODO: rewrite with iterator handles
     # def predict(self, features) -> np.ndarray:
