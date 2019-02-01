@@ -8,7 +8,7 @@ from tensorflow.feature_column import (  # pylint: disable=import-error
     categorical_column_with_vocabulary_list,
     indicator_column)
 
-DIR = "/home/acalc79/synced/part-ii-project/data/sets/pairs_trivial"
+DIR = "/home/acalc79/synced/part-ii-project/data/sets/pairs"
 VOCABULARY_PATH = os.path.join(DIR, "vocab.txt")
 
 
@@ -24,7 +24,7 @@ class DataLoader:
         self.identifier_length = identifier_length
         with open(VOCABULARY_PATH, 'r') as vocabfile:
             self.vocab = vocabfile.read().splitlines()
-        print("Types selected: {}".format(self.vocab))
+        print("Types selected: {}".format(self.vocab[:50]))
         self._prepare_columns()
 
     def _prepare_columns(self):

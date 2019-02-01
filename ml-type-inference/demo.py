@@ -19,15 +19,23 @@ def main(num_epochs, batch_size, learn_rate):
               'batch_size': batch_size,
               'convolutional': [{'filters': 32, 'kernel_size': 3},
                                 {'filters': 32, 'kernel_size': 3},
-                                {'filters': 32, 'kernel_size': 3},
-                                {'filters': 32, 'kernel_size': 3}],
-              'dense': [{'units': 32},
-                        {'units': 32},
-                        {'units': 32}]}
+                                {'filters': 24, 'kernel_size': 3},
+                                {'filters': 16, 'kernel_size': 3}],
+              'dense': [{'units': 24},
+                        {'units': 24},
+                        {'units': 24},
+                        {'units': 24}]}
 
     with CNN1d(params, "./out") as network:
         # Train the Model.
-        [metric for metric in network.train(num_epochs, lambda _: learn_rate)]
+        print("Running {} epochs".format(num_epochs))
+
+        def dynamic_learn_rate(epoch):
+            return 5 / (50 + epoch)
+
+        for i, epoch_metrics in enumerate(network.train(num_epochs,
+                                                        dynamic_learn_rate)):
+            print("Metrics after {}th epoch: {}".format(i, epoch_metrics))
 
         # Evaluate the model.
         metrics = network.test()

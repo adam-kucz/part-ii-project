@@ -1,4 +1,6 @@
 """TODO"""
+from functools import reduce
+import operator as op
 import os
 from typing import Callable, Mapping
 # pylint: disable=unused-import
@@ -114,6 +116,13 @@ class CNN1d:
         # with tf.control_dependencies([print_outs]):
         self.train_op = tf.train.AdagradOptimizer(self.learning_rate)\
                                 .minimize(loss, tf.train.get_global_step())
+
+        total_params = reduce(
+            op.add,
+            (reduce(op.mul, (dim.value for dim in var.get_shape()), 1)
+             for var in tf.trainable_variables()),
+            0)
+        print("Total number of trainable parameters: {}".format(total_params))
 
     def __enter__(self):
         return self
