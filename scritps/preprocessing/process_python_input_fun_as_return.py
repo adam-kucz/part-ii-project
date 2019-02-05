@@ -8,27 +8,27 @@ from typing import (Callable, Iterable, List,  # noqa: F401
 import typing as t
 
 import typed_ast.ast3 as ast3
-# pylint: disable=E0611
+# pylint: disable=no-name-in-module
 from typed_ast.ast3 import (
     AnnAssign, arg, Assign, AST, AsyncFunctionDef, AsyncFor, AsyncWith,
     Attribute, FunctionDef, For, Name, NodeVisitor, Tuple, With)
 
 from type_representation import (
-    FunctionType, is_tuple, GenericType, Kind, Type, UNANNOTATED)
+    is_tuple, GenericType, Kind, Type, UNANNOTATED)
 import util as myutil
 
 
-A = TypeVar('A')  # pylint: disable=C0103
-B = TypeVar('B')  # pylint: disable=C0103
+A = TypeVar('A')  # pylint: disable=invalid-name
+B = TypeVar('B')  # pylint: disable=invalid-name
 
 
-# pylint: disable=C0103
+# pylint: disable=invalid-name
 def bind(a: Optional[A], f: Callable[[A], Optional[B]]) -> Optional[B]:
     """Monadic bind for the Option monad"""
     return f(a) if a is not None else None
 
 
-# pylint: disable=C0103
+# pylint: disable=invalid-name
 def from_option(a: A, option_a: Optional[A]) -> A:
     """Return value in Optional if present or default otherwise"""
     return option_a if option_a is not None else a
@@ -55,7 +55,7 @@ def get_names(names: Union[AST, Sequence[AST]]) -> List[str]:
     return [nam for nams in nam_its for nam in nams]
 
 
-def to_list(typ: Optional[Type]):
+def to_list(typ: Optional[Type]) -> List[Type]:
     """
     Converts optional type to a list of types
 
@@ -92,28 +92,22 @@ class TypeCollector(NodeVisitor):
             for name, typ in zip(names, typs):  # type: str, Type
                 self.add_type(name, typ)
 
-    def visit_FunctionDef(  # pylint: disable=C0103
-            self,
-            node: FunctionDef) -> None:
+    def visit_FunctionDef(  # pylint: disable=invalid-name
+            self, node: FunctionDef) -> None:
         """Add the function definition node to the list"""
-        args: Iterable[Optional[Type]]\
-            = (bind(arg.annotation, Type.from_ast)
-               for arg in node.args.args)
-        arg_types: List[Type] = [from_option(UNANNOTATED, arg) for arg in args]
         ret_type: Type = from_option(UNANNOTATED,
                                      bind(node.returns, Type.from_ast))
-        self.add_type(node.name, FunctionType(arg_types, ret_type))
-        # self.add_type(node.name, parse_type(node.type_comment))
+        self.add_type(node.name, ret_type)
         self.generic_visit(node)
 
-    def visit_AsyncFunctionDef(  # pylint: disable=C0103
+    def visit_AsyncFunctionDef(  # pylint: disable=invalid-name
             self, n: AsyncFunctionDef) -> None:
         """Add the function definition node to the list"""
         self.visit_FunctionDef(FunctionDef(n.name, n.args, n.body,
                                            n.decorator_list, n.returns,
                                            n.type_comment))
 
-    def visit_For(  # pylint: disable=C0103
+    def visit_For(  # pylint: disable=invalid-name
             self, node: For) -> None:
         """Add for variable if type comment present"""
         self.add_types(get_names(node.target),
@@ -121,12 +115,12 @@ class TypeCollector(NodeVisitor):
                                     Type.from_type_comment)))
         self.generic_visit(node)
 
-    def visit_AsyncFor(  # pylint: disable=C0103
+    def visit_AsyncFor(  # pylint: disable=invalid-name
             self, n: AsyncFor) -> None:
         """Add for variable if type comment present"""
         self.visit_For(For(n.target, n.iter, n.body, n.orelse, n.type_comment))
 
-    def visit_With(  # pylint: disable=C0103
+    def visit_With(  # pylint: disable=invalid-name
             self, node: With) -> None:
         """Add with variables if type comment present"""
         self.add_types(get_names([item.optional_vars
@@ -136,12 +130,13 @@ class TypeCollector(NodeVisitor):
                                     Type.from_type_comment)))
         self.generic_visit(node)
 
-    def visit_AsyncWith(  # pylint: disable=C0103
+    def visit_AsyncWith(  # pylint: disable=invalid-name
             self, n: AsyncWith) -> None:
         """Add with variables if type comment present"""
         self.visit_With(With(n.items, n.body, n.type_comment))
 
-    def visit_Assign(self, node: Assign) -> None:  # pylint: disable=C0103
+    # pylint: disable=invalid-name
+    def visit_Assign(self, node: Assign) -> None:
         """Add the type from assignment comment to the list"""
         self.add_types(get_names(node.targets),
                        to_list(bind(node.type_comment,
@@ -153,7 +148,7 @@ class TypeCollector(NodeVisitor):
         self.add_type(node.arg, bind(node.annotation, Type.from_ast))
         self.generic_visit(node)
 
-    def visit_AnnAssign(  # pylint: disable=C0103
+    def visit_AnnAssign(  # pylint: disable=invalid-name
             self,
             node: AnnAssign) -> None:
         """Add the function argument to type list"""

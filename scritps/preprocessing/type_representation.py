@@ -31,7 +31,8 @@ class Kind(Enum):
     @staticmethod
     def combine(kinds: Iterable['Kind']) -> 'Kind':
         """Combines multiple subkinds into overall kind"""
-        sofar: 'Kind' = Kind.PARTIAL
+        iter_nonempty: bool = False
+        sofar: 'Kind' = Kind.EMPTY
         for k in kinds:
             if k == Kind.PARTIAL:
                 return Kind.PARTIAL
@@ -40,10 +41,11 @@ class Kind(Enum):
                     return Kind.PARTIAL
                 sofar = Kind.EMPTY
             elif k == Kind.FULL:
-                if sofar == Kind.EMPTY:
+                if sofar == Kind.EMPTY and iter_nonempty:
                     return Kind.PARTIAL
                 sofar = Kind.FULL
-        return Kind.EMPTY
+            iter_nonempty = True
+        return sofar
 
 
 class Type(Generic[T], metaclass=ABCMeta):
