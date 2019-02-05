@@ -1,4 +1,5 @@
 """TODO"""
+from datetime import datetime
 from functools import reduce
 import operator as op
 import os
@@ -25,14 +26,24 @@ class CNN1d:
     _sess: tf.Session
 
     def __init__(self, params, out_dir) -> None:
-        self.out_dir = out_dir
-        self._loader = DataLoader(params['identifier_len'])
+        self._loader = DataLoader(params['net']['identifier_len'])
         self._data_pipeline(params)
+        self._set_out_dir(out_dir, self._loader.vocab, params['net'])
         tf.train.create_global_step()
-        self._build_network(params)
+        self._build_network(params['net'])
         self._sess = tf.Session()
         self._sess.run(tf.initializers.global_variables())
         self._sess.run(tf.initializers.tables_initializer())
+
+    def _set_out_dir(self, out_dir, vocab, net_params):
+        identifier = hash(repr((vocab, net_params)))
+        for subdir in os.listdir(out_dir):
+            if subdir.startswith("net{}".format(identifier)):
+                self.out_dir = os.path.join(out_dir, subdir)
+                return
+        time = datetime.now().strftime('%Y-%m-%d-%H:%M')
+        self.out_dir = os.path.join(out_dir,
+                                    "net{}-{}".format(identifier, time))
 
     def _data_pipeline(self, params):
         # TODO: consider moving datasets
@@ -44,11 +55,11 @@ class CNN1d:
         self.val_iter = val_dataset.batch(params['batch_size'])\
                                    .make_initializable_iterator()
 
-    def _build_network(self, params):
+    def _build_network(self, net_params):
         # Get input tensors.
         # one_hot_chars.shape = batch_size x max_chars x chars_in_vocab
         self.iter_handle, one_hot_chars, one_hot_labels\
-            = self._loader.handle_to_input_tensors(params['batch_size'])
+            = self._loader.handle_to_input_tensors()
         labels = tf.math.argmax(one_hot_labels, 1)
         print("Shape of one_hot_chars: {}, labels: {}"
               .format(one_hot_chars.shape, labels.shape))
@@ -56,7 +67,7 @@ class CNN1d:
         # Create 1d convolutional layers.
         with tf.name_scope("conv"):
             tensor = one_hot_chars
-            for conv in params['convolutional']:
+            for conv in net_params['convolutional']:
                 tensor = tf.layers.conv1d(inputs=tensor,
                                           filters=conv['filters'],
                                           kernel_size=conv['kernel_size'],
@@ -69,7 +80,7 @@ class CNN1d:
         # Create dense layers.
         with tf.name_scope("dense"):
             tensor = tf.layers.flatten(tensor)
-            for dense in params['dense']:
+            for dense in net_params['dense']:
                 tensor = tf.layers.dense(inputs=tensor,
                                          units=dense['units'],
                                          activation=tf.nn.relu)

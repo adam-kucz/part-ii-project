@@ -1,7 +1,7 @@
 """TODO: identifier_type_data module docstring"""
 import os
 import string
-from typing import Any, List, Tuple
+from typing import Any, Tuple
 
 import tensorflow as tf
 from tensorflow.feature_column import (  # pylint: disable=import-error
@@ -14,7 +14,7 @@ VOCABULARY_PATH = os.path.join(DIR, "vocab.txt")
 
 class DataLoader:
     """TODO: class docstring"""
-    vocab: List[str]
+    vocab: Tuple[str]
     char_col_names: Tuple[str]
     typ_col: Any  # TODO: figure out if we can assign correct type
     char_cols: Tuple
@@ -65,7 +65,7 @@ class DataLoader:
 
         return dataset.map(transform if labelled else self._str_to_chars)
 
-    def handle_to_input_tensors(self, batch_size):
+    def handle_to_input_tensors(self):
         """TODO: process_dataset docstring"""
         handle = tf.placeholder(tf.string, shape=[])
         iterator = tf.data.Iterator.from_string_handle(

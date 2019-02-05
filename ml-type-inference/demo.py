@@ -15,23 +15,24 @@ def main(num_epochs, batch_size, learn_rate):
     # Build a CNN with 5 hidden layers
     params = {'train_filepath': TRAIN_PATH,
               'validate_filepath': VALIDATE_PATH,
-              'identifier_len': IDENTIFIER_LENGTH,
               'batch_size': batch_size,
-              'convolutional': [{'filters': 32, 'kernel_size': 3},
-                                {'filters': 32, 'kernel_size': 3},
-                                {'filters': 24, 'kernel_size': 3},
-                                {'filters': 16, 'kernel_size': 3}],
-              'dense': [{'units': 24},
-                        {'units': 24},
-                        {'units': 24},
-                        {'units': 24}]}
+              'net': {
+                  'identifier_len': IDENTIFIER_LENGTH,
+                  'convolutional': [{'filters': 32, 'kernel_size': 3},
+                                    {'filters': 32, 'kernel_size': 3},
+                                    {'filters': 24, 'kernel_size': 3},
+                                    {'filters': 16, 'kernel_size': 3}],
+                  'dense': [{'units': 24},
+                            {'units': 24},
+                            {'units': 24},
+                            {'units': 24}]}}
 
-    with CNN1d(params, "./out") as network:
+    with CNN1d(params, "/home/acalc79/synced/part-ii-project/out") as network:
         # Train the Model.
         print("Running {} epochs".format(num_epochs))
 
         def dynamic_learn_rate(epoch):
-            return 5 / (50 + epoch)
+            return learn_rate * 5 / (50 + epoch)
 
         for i, epoch_metrics in enumerate(network.train(num_epochs,
                                                         dynamic_learn_rate)):
