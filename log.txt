@@ -1,0 +1,3 @@
+test (11.645663543125217%): ['pipenv', 'guake', 'cython', 'zmirror', 'securedrop', 'qtile', 'golem', 'connexion', 'pelican-plugins', 'django-extensions', 'cookiecutter-django', 'rasa_core', 'pylint', 'sphinx', 'pycodestyle', 'jedi', 'errbot', 'Cura', 'dpu-utils', 'RxPY', 'ssh-audit', 'coala-bears']
+validate (36.0978470302421%): ['aiohttp', 'zulip', 'sslyze', 'cpython', 'allennlp', 'hypothesis-python', 'electrum', 'plumbum', 'pytorch', 'pip', 'rasa_nlu', 'chalice', 'plotly.py', 'tornado']
+train (52.25648942663268%): ['mypy', 'home-assistant', 'certbot', 'auto-sklearn', 'orange3', 'ipython', 'apistar', 'pyston', 'grr', 'dcos', 'azure-sdk-for-python']

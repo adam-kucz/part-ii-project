@@ -3,6 +3,7 @@
 
 from argparse import ArgumentParser, Namespace
 import csv
+from pathlib import Path
 from typing import (Callable, Iterable, List,  # noqa: F401
                     Optional, Sequence, TextIO, TypeVar, Union)
 import typing as t
@@ -169,7 +170,7 @@ def get_type_annotations(filestring: str) -> List[t.Tuple[str, Type]]:
     return collector.defs
 
 
-def extract_type_annotations(in_filename: str, out_filename: str) -> None:
+def extract_type_annotations(in_filename: Path, out_filename: Path) -> None:
     """Extract type annotations from input file to output file"""
     with open(in_filename, 'r') as infile:  # type: TextIO
         types: List[t.Tuple[str, Type]] = get_type_annotations(infile.read())
@@ -183,8 +184,8 @@ def extract_type_annotations(in_filename: str, out_filename: str) -> None:
 if __name__ == "__main__":
     PARSER: ArgumentParser = ArgumentParser(
         description='Extract (name,type) pairs from python source file')
-    PARSER.add_argument('path', help='source file')
-    PARSER.add_argument('out', nargs='?', default='out.csv',
+    PARSER.add_argument('path', type=Path, help='source file')
+    PARSER.add_argument('out', type=Path, nargs='?', default=Path('out.csv'),
                         help='output file')
     ARGS: Namespace = PARSER.parse_args()
 

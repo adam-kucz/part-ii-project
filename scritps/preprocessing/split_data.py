@@ -2,16 +2,18 @@
 """Module for splitting data into subsets"""
 
 from argparse import ArgumentParser, Namespace
+from ast import literal_eval
 from itertools import dropwhile
 import os
+from pathlib import Path
 from queue import PriorityQueue
 import random
-from typing import (Any, Dict, Iterable, List, Mapping,  # noqa
+from typing import (Any, Dict, Iterable, List, Mapping,  # noqa: F401
                     Optional, Sequence, TextIO, Tuple, TypeVar)
 
 import util as myutil
 
-T = TypeVar('T')  # pylint: disable=C0103
+T = TypeVar('T')  # pylint: disable=invalid-name
 
 
 def get_next_project(
@@ -33,7 +35,7 @@ def with_added_remaining(
         Optional[Dict[T, Tuple[float, List[str]]]]:
     """TODO"""
     result: Dict[T, Tuple[float, List[str]]] = dict(sofar)
-    # pylint: disable=E1136
+    # pylint: disable=unsubscriptable-object
     queue: PriorityQueue[Tuple[float, T]] = PriorityQueue()
     for grp, (_, goal, __) in groups.items():\
             # type: T, Tuple[Any, float, Any]
@@ -45,7 +47,6 @@ def with_added_remaining(
             = get_next_project(projects_normalised,
                                groups[group][2] - g_size)
         if found is not None:
-            # pylint: disable=E0633
             proj, num = found  # type: str, float
             result[group] = (g_size + num, g_list + [proj])
             projects_normalised.remove(found)
@@ -54,11 +55,11 @@ def with_added_remaining(
 
 
 # TODO: fix
-# pylint: disable=R0914
+# pylint: disable=too-many-locals
 def get_split(
         requested: Mapping[T, Tuple[float, float, float]],
         projects_iter: Iterable[Tuple[str, int]]) -> \
-            Optional[Dict[T, Tuple[float, List[str]]]]:  # noqa
+            Optional[Dict[T, Tuple[float, List[str]]]]:  # noqa: E126
     """Tries to split projects into requested disjoint subsets"""
     projects: List[Tuple[str, int]] = sorted(projects_iter,
                                              key=lambda t: t[1],
@@ -77,7 +78,6 @@ def get_split(
             found: Optional[Tuple[str, float]]\
                 = get_next_project(projects_normalised, high - group_size)
             if found is not None:
-                # pylint: disable=E0633
                 proj, num = found  # type: str, float
                 group_size += num
                 group_projs.append(proj)
@@ -94,7 +94,7 @@ def count_annots(proj_dir: str) -> int:
     for root, _, files in os.walk(proj_dir):  # type: str, List[str], List[str]
         for filename in filter(lambda f: os.path.splitext(f)[1] == '.csv',
                                files):  # type: str
-            # pylint: disable=C0103
+            # pylint: disable=invalid-name
             with open(os.path.join(root, filename)) as f:  # type: TextIO
                 count += len(f.readlines())
     return count
@@ -109,7 +109,7 @@ def get_projects(data_dir: str) -> List[Tuple[str, int]]:
 def read_splits(filename: str) -> Dict[str, Tuple[float, float, float]]:
     """Read specification of groups from file"""
     result: Dict[str, Tuple[float, float, float]] = {}
-    # pylint: disable=C0103
+    # pylint: disable=invalid-name
     with open(filename) as f:  # type: TextIO
         for line in f:  # type: str
             name, min_str, goal_str, max_str\
@@ -118,46 +118,59 @@ def read_splits(filename: str) -> Dict[str, Tuple[float, float, float]]:
     return result
 
 
-def write_project(outfile: TextIO, proj_dir: str) -> None:
+def write_project(outfile: TextIO, proj_dir: Path) -> None:
     """TODO"""
-    for root, _, files in os.walk(proj_dir):  # type: str, List[str], List[str]
-        for filename in filter(lambda f: os.path.splitext(f)[1] == '.csv',
-                               files):  # type: str
-            # pylint: disable=C0103
-            with open(os.path.join(root, filename)) as f:  # type: TextIO
-                outfile.writelines(f.readlines())
+    for filepath in proj_dir.rglob("*.csv"):
+        if filepath.is_file():
+            with open(filepath) as csvfile:  # type: TextIO
+                outfile.writelines(csvfile.readlines())
 
 
-def write_split(outfilename: str, projdir: str, projs: List[str]) -> None:
+def write_split(outfilename: Path, projdir: Path, projs: List[str]) -> None:
     """TODO"""
     myutil.ensure_parents(outfilename)
     with open(outfilename, 'w', newline='') as outfile:  # type: TextIO
         for project in projs:  # type: str
-            write_project(outfile, os.path.join(projdir, project))
+            write_project(outfile, projdir.joinpath(project))
 
 
 if __name__ == "__main__":
     PARSER: ArgumentParser = ArgumentParser(
         description='Split projects into groups')
-    PARSER.add_argument('datadir',
+    PARSER.add_argument('datadir', type=Path,
                         help='directory with projects')
-    PARSER.add_argument('splits',
+    PARSER.add_argument('splits', type=Path,
                         help='file specifying group sizes as'
                         + '(name, min_fraction, max_fraction)')  # noqa
-    PARSER.add_argument('outdir', nargs='?',
-                        help='directory to save output files in')  # noqa
+    PARSER.add_argument('outdir', nargs='?', type=Path,
+                        help='directory to save output files in')
+    PARSER.add_argument('--log_file', default=Path('log.txt'), type=Path,
+                        help='file to save splits in')  # noqa
+    PARSER.add_argument('-r', action='store_true',
+                        help='read splits from log file')  # noqa
     ARGS: Namespace = PARSER.parse_args()
 
-    splits: Optional[Mapping[str, Tuple[float, List[str]]]]\
-        = get_split(read_splits(ARGS.splits), get_projects(ARGS.datadir))
+    # pylint: disable=invalid-name
+    outdir = ARGS.outdir if ARGS.outdir else ARGS.datadir
 
-    if splits is not None:
-        for split, (fraction, project_list) in splits.items():\
-                # type: str, Tuple[float, List[str]]
-            out_filename: str\
-                = os.path.join(ARGS.outdir
-                               if ARGS.outdir is not None
-                               else ARGS.datadir,
-                               split + '.csv')
-            write_split(out_filename, ARGS.datadir, project_list)
-            print(split + ': ' + str(fraction))
+    if ARGS.r:
+        with open(ARGS.log_file) as log:
+            for line in log:
+                split: str = line.split()[0]
+                projects: List[str] = literal_eval(line.split(': ')[1])
+                out_filename: Path = outdir.joinpath(split).with_suffix('.csv')
+                write_split(out_filename, ARGS.datadir, projects)
+    else:
+        splits: Optional[Mapping[str, Tuple[float, List[str]]]]\
+            = get_split(read_splits(ARGS.splits), get_projects(ARGS.datadir))
+        if splits is not None:
+            with open(ARGS.log_file, 'w') as log:
+                for split, (fraction, project_list) in splits.items():\
+                        # type: str, Tuple[float, List[str]]
+                    print("{} ({}%): {}"
+                          .format(split, fraction * 100, project_list),
+                          file=log)
+                    out_filename: Path = outdir.joinpath(split)\
+                                               .with_suffix('.csv')
+                    write_split(out_filename, ARGS.datadir, project_list)
+                    print("{}: {}".format(split, fraction))
