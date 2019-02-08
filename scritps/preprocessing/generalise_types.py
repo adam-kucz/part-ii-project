@@ -19,12 +19,11 @@ def generalize_to_vocab(vocab: List[str], typ_str: str) -> str:
     return found if found else typ_str
 
 
-def main(vocab_filename, in_filename, out_filename):
+def main(vocab_filename: Path, in_filename: Path, out_filename: Path):
     """TODO: learn_type_to_class docstring"""
-    with open(vocab_filename) as vocabfile,\
-         open(in_filename, newline='') as infile,\
-         open(out_filename, mode='w') as outfile:  # noqa: E127
-        vocab = vocabfile.read().split('\n')
+    with in_filename.open(newline='') as infile,\
+         out_filename.open(mode='w') as outfile:  # noqa: E127
+        vocab = vocab_filename.read_text().split('\n')
         reader = csv.reader(infile)
         writer = csv.writer(outfile)
         count, in_v, new_in_v = 0, 0, 0

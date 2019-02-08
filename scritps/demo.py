@@ -1,16 +1,17 @@
 # pylint: disable=missing-docstring
 import argparse
-import os
+from pathlib import Path
 
 import identifier_type_data as data
 from onedcnn import CNN1d
 
-TRAIN_PATH = os.path.join(data.DIR, "train.csv")
-VALIDATE_PATH = os.path.join(data.DIR, "validate.csv")
-IDENTIFIER_LENGTH = 15
+TRAIN_PATH: Path = data.DIR.joinpath("train.csv")
+VALIDATE_PATH: Path = data.DIR.joinpath("validate.csv")
+OUT_PATH: Path = Path("/home/acalc79/synced/part-ii-project/out")
+IDENTIFIER_LENGTH: int = 15
 
 
-def main(num_epochs, batch_size, learn_rate):
+def main(num_epochs, batch_size, learn_rate, out_path=OUT_PATH):
     """TODO: describe main"""
     # Build a CNN with 5 hidden layers
     params = {'train_filepath': TRAIN_PATH,
@@ -22,12 +23,10 @@ def main(num_epochs, batch_size, learn_rate):
                                     {'filters': 32, 'kernel_size': 3},
                                     {'filters': 24, 'kernel_size': 3},
                                     {'filters': 16, 'kernel_size': 3}],
-                  'dense': [{'units': 24},
-                            {'units': 24},
-                            {'units': 24},
-                            {'units': 24}]}}
+                  'dense': [{'units': 48},
+                            {'units': 48}]}}
 
-    with CNN1d(params, "/home/acalc79/synced/part-ii-project/out") as network:
+    with CNN1d(params, out_path) as network:
         # Train the Model.
         print("Running {} epochs".format(num_epochs))
 

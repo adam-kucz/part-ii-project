@@ -4,14 +4,13 @@
 from argparse import ArgumentParser, Namespace
 from ast import literal_eval
 from itertools import dropwhile
-import os
+from os import walk
 from pathlib import Path
 from queue import PriorityQueue
 import random
 from typing import (Any, Dict, Iterable, List, Mapping,  # noqa: F401
                     Optional, Sequence, TextIO, Tuple, TypeVar)
 
-import util as myutil
 
 T = TypeVar('T')  # pylint: disable=invalid-name
 
@@ -88,29 +87,29 @@ def get_split(
     return with_added_remaining(result, projects_normalised, requested)
 
 
-def count_annots(proj_dir: str) -> int:
+def count_annots(proj_dir: Path) -> int:
     """Count number of identifier/type pairs in project"""
     count = 0
-    for root, _, files in os.walk(proj_dir):  # type: str, List[str], List[str]
-        for filename in filter(lambda f: os.path.splitext(f)[1] == '.csv',
-                               files):  # type: str
+    for root, _, files in walk(proj_dir):  # type: str, List[str], List[str]
+        for filename in filter(lambda f: f.suffix == '.csv',
+                               map(Path, files)):  # type: Path
             # pylint: disable=invalid-name
-            with open(os.path.join(root, filename)) as f:  # type: TextIO
+            with Path(root).joinpath(filename).open() as f:  # type: TextIO
                 count += len(f.readlines())
     return count
 
 
-def get_projects(data_dir: str) -> List[Tuple[str, int]]:
+def get_projects(data_dir: Path) -> List[Tuple[Path, int]]:
     """Get projects from directory with number of type annotations in each"""
-    return [(proj, count_annots(os.path.join(data_dir, proj)))
-            for proj in os.listdir(data_dir)]
+    return [(proj, count_annots(data_dir.joinpath(proj)))
+            for proj in data_dir.iter_dir() if proj.is_dir()]
 
 
-def read_splits(filename: str) -> Dict[str, Tuple[float, float, float]]:
+def read_splits(filename: Path) -> Dict[str, Tuple[float, float, float]]:
     """Read specification of groups from file"""
     result: Dict[str, Tuple[float, float, float]] = {}
     # pylint: disable=invalid-name
-    with open(filename) as f:  # type: TextIO
+    with filename.open() as f:  # type: TextIO
         for line in f:  # type: str
             name, min_str, goal_str, max_str\
                 = line.split(',')  # type: str, str, str, str
@@ -122,15 +121,16 @@ def write_project(outfile: TextIO, proj_dir: Path) -> None:
     """TODO"""
     for filepath in proj_dir.rglob("*.csv"):
         if filepath.is_file():
-            with open(filepath) as csvfile:  # type: TextIO
+            with filepath.open() as csvfile:  # type: TextIO
                 outfile.writelines(csvfile.readlines())
 
 
-def write_split(outfilename: Path, projdir: Path, projs: List[str]) -> None:
+def write_split(outfilename: Path, projdir: Path, projects: List[str]) -> None:
     """TODO"""
-    myutil.ensure_parents(outfilename)
-    with open(outfilename, 'w', newline='') as outfile:  # type: TextIO
-        for project in projs:  # type: str
+    if not outfilename.parent.exists():
+        outfilename.parent.mkdir(parents=True)
+    with outfilename.open('w', newline='') as outfile:  # type: TextIO
+        for project in projects:  # type: str
             write_project(outfile, projdir.joinpath(project))
 
 
@@ -154,17 +154,17 @@ if __name__ == "__main__":
     outdir = ARGS.outdir if ARGS.outdir else ARGS.datadir
 
     if ARGS.r:
-        with open(ARGS.log_file) as log:
-            for line in log:
-                split: str = line.split()[0]
-                projects: List[str] = literal_eval(line.split(': ')[1])
+        with ARGS.log_file.open() as log:
+            for split_line in log:
+                split: str = split_line.split()[0]
+                projs: List[str] = literal_eval(split_line.split(': ')[1])
                 out_filename: Path = outdir.joinpath(split).with_suffix('.csv')
-                write_split(out_filename, ARGS.datadir, projects)
+                write_split(out_filename, ARGS.datadir, projs)
     else:
         splits: Optional[Mapping[str, Tuple[float, List[str]]]]\
             = get_split(read_splits(ARGS.splits), get_projects(ARGS.datadir))
         if splits is not None:
-            with open(ARGS.log_file, 'w') as log:
+            with ARGS.log_file.open('w') as log:
                 for split, (fraction, project_list) in splits.items():\
                         # type: str, Tuple[float, List[str]]
                     print("{} ({}%): {}"

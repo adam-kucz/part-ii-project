@@ -2,13 +2,13 @@
 import argparse
 from collections import Counter
 import csv
-import os
+from pathlib import Path
 
 
-def main(in_filename, out_filename, percentage):
+def main(in_filename: Path, out_filename: Path, percentage: Path):
     """TODO: learn_type_to_class docstring"""
-    with open(in_filename, newline='') as csvfile,\
-         open(out_filename, mode='w') as vocabfile:  # noqa: E127
+    with in_filename.open(newline='') as csvfile,\
+         out_filename.open(mode='w') as vocabfile:  # noqa: E127
         reader = csv.reader(csvfile, delimiter=',')
         types = tuple(map(lambda t: t[1], reader))[1:]
         included = 0
@@ -22,9 +22,9 @@ def main(in_filename, out_filename, percentage):
 if __name__ == '__main__':
     # Get program arguments
     parser = argparse.ArgumentParser()  # pylint: disable=invalid-name
-    parser.add_argument('in_filename', type=str,
+    parser.add_argument('in_filename', type=Path,
                         help='filename of the training set to count types in')
-    parser.add_argument('--out_filename', default=None, type=str,
+    parser.add_argument('--out_filename', default=None, type=Path,
                         help='filename of the vocabulary file to write to')
     parser.add_argument('--percentage', default=0.9, type=float,
                         help='least percentage of types in vocabulary')
@@ -33,8 +33,6 @@ if __name__ == '__main__':
     # pylint: disable=invalid-name
     out_name = args.out_filename
     if not out_name:
-        out_name = os.path.join(
-            os.path.dirname(os.path.abspath(args.in_filename)),
-            "vocab.txt")
+        out_name = args.in_filename.parent.joinpath("vocab.txt")
 
     main(args.in_filename, out_name, args.percentage)

@@ -2,16 +2,14 @@
 """Module for downloading python repositories from github"""
 
 from argparse import ArgumentParser, Namespace
-import os
+from os import chdir, walk
 from pathlib import Path
 import re
-import shutil
-from typing import Callable, Iterable, List, Set, Tuple
+from shutil import rmtree
+from typing import Iterable, List, Set, Tuple
 from subprocess import CompletedProcess, DEVNULL, run, PIPE  # nosec
 
-import process_python_input as ppi
-import process_python_input_fun_as_return as ppi_far
-from util import ensure_dir
+from process_python_input import extract_type_annotations
 
 
 def download_data(repos: Iterable[str],
@@ -22,7 +20,7 @@ def download_data(repos: Iterable[str],
         repo_path = Path(reponame)
         if repo_path.exists():
             if ignore_existing:
-                shutil.rmtree(reponame, ignore_errors=True)
+                rmtree(reponame, ignore_errors=True)
             else:
                 continue
         result: CompletedProcess\
@@ -42,22 +40,23 @@ def download_data(repos: Iterable[str],
 
 def remove_non_python(data_dir: str) -> None:
     """Delete all non-python files and resulting empty directories"""
-    for root, dirs, files in os.walk(data_dir, topdown=False):\
+    for root, dirs, files in walk(data_dir, topdown=False):\
             # type: str, List[str], List[str]
+        root_path: Path = Path(root)
         for name in files:  # type: str
-            _, ext = os.path.splitext(name)  # type: str, str
-            if ext != ".py":
-                os.remove(os.path.join(root, name))
+            if Path(name).suffix != ".py":
+                root_path.joinpath(name).unlink()
         for name in dirs:  # type: str
             try:
-                os.rmdir(os.path.join(root, name))
+                root_path.joinpath(name).rmdir()
             except OSError:
                 continue
 
 
-def extract_annotations(repo_dir: Path, out_dir: Path,
-                        extract_typs: Callable[[Path, Path], None])\
-        -> List[Tuple[str, Exception]]:
+def extract_annotations(repo_dir: Path,
+                        out_dir: Path,
+                        fun_as_ret: bool = False)\
+                        -> List[Tuple[str, Exception]]:
     """
     Extracts annotaions from all files in the directory
 
@@ -71,7 +70,7 @@ def extract_annotations(repo_dir: Path, out_dir: Path,
         outpath: Path = out_dir.joinpath(repo, '+'.join(rel.parts[1:]))\
                                .with_suffix('.csv')
         try:
-            extract_typs(pypath, outpath)
+            extract_type_annotations(pypath, outpath, fun_as_ret)
         except (SyntaxError, UnicodeDecodeError) as exception:
             exceptions.append((pypath, exception))
     return exceptions
@@ -92,18 +91,20 @@ if __name__ == "__main__":
                         help='save functions as their return types')
     ARGS: Namespace = PARSER.parse_args()
 
-    with open(ARGS.path, 'r') as infile:  # type: TextIO
+    with ARGS.path.open() as infile:  # type: TextIO
         matches: Iterable = (re.search("^\\./(.*?)/", line)
                              for line in infile)
         REPOS: Set[str] = set(match.group(1) for match in matches
                               if match is not None)
 
-    ensure_dir(ARGS.repodir)
-    ensure_dir(ARGS.outdir)
-    cwd: str = os.getcwd()
-    os.chdir(ARGS.repodir)
+    if not ARGS.repodir.exists():
+        ARGS.repodir.mkdir(parents=True)
+    if not ARGS.outdir.exists():
+        ARGS.outdir.mkdir(parents=True)
+    cwd: Path = Path.cwd()
+    chdir(ARGS.repodir)
     NOT_FOUND: List[str] = download_data(REPOS, ARGS.r)
-    os.chdir(cwd)
+    chdir(cwd)
 
     if NOT_FOUND:
         print("Missing {} repositories: {}".format(len(NOT_FOUND), NOT_FOUND))
@@ -113,6 +114,4 @@ if __name__ == "__main__":
     print("Removing non-python files from {}".format(ARGS.repodir))
     remove_non_python(ARGS.repodir)
     print("Extracting types from {}".format(ARGS.outdir))
-    extract_annotations(ARGS.repodir, ARGS.outdir,
-                        ppi_far.extract_type_annotations if ARGS.f
-                        else ppi.extract_type_annotations)
+    extract_annotations(ARGS.repodir, ARGS.outdir, ARGS.f)

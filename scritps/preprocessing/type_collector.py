@@ -1,28 +1,24 @@
 #!/usr/bin/env python3
-"""Module for parsing python files"""
+"""NodeCollector to extract identifier-type pairs from python files"""
 
-from argparse import ArgumentParser, Namespace
-import csv
-from pathlib import Path
 from typing import (Callable, Iterable, List,  # noqa: F401
-                    Optional, Sequence, TextIO, TypeVar, Union)
+                    Optional, Sequence, TypeVar, Union)
 import typing as t
 
-import typed_ast.ast3 as ast3
 # pylint: disable=no-name-in-module
 from typed_ast.ast3 import (
     AnnAssign, arg, Assign, AST, AsyncFunctionDef, AsyncFor, AsyncWith,
     Attribute, FunctionDef, For, Name, NodeVisitor, Tuple, With)
 
 from type_representation import (
-    is_tuple, GenericType, Kind, Type, UNANNOTATED)
-import util as myutil
+    FunctionType, is_tuple, GenericType, Kind, Type, UNANNOTATED)
 
 
 A = TypeVar('A')  # pylint: disable=invalid-name
 B = TypeVar('B')  # pylint: disable=invalid-name
 
 
+# TODO: move to a utility module
 # pylint: disable=invalid-name
 def bind(a: Optional[A], f: Callable[[A], Optional[B]]) -> Optional[B]:
     """Monadic bind for the Option monad"""
@@ -56,7 +52,7 @@ def get_names(names: Union[AST, Sequence[AST]]) -> List[str]:
     return [nam for nams in nam_its for nam in nams]
 
 
-def to_list(typ: Optional[Type]) -> List[Type]:
+def to_list(typ: Optional[Type]):
     """
     Converts optional type to a list of types
 
@@ -94,11 +90,17 @@ class TypeCollector(NodeVisitor):
                 self.add_type(name, typ)
 
     def visit_FunctionDef(  # pylint: disable=invalid-name
-            self, node: FunctionDef) -> None:
+            self,
+            node: FunctionDef) -> None:
         """Add the function definition node to the list"""
+        args: Iterable[Optional[Type]]\
+            = (bind(arg.annotation, Type.from_ast)
+               for arg in node.args.args)
+        arg_types: List[Type] = [from_option(UNANNOTATED, arg) for arg in args]
         ret_type: Type = from_option(UNANNOTATED,
                                      bind(node.returns, Type.from_ast))
-        self.add_type(node.name, ret_type)
+        self.add_type(node.name, FunctionType(arg_types, ret_type))
+        # self.add_type(node.name, parse_type(node.type_comment))
         self.generic_visit(node)
 
     def visit_AsyncFunctionDef(  # pylint: disable=invalid-name
@@ -155,38 +157,3 @@ class TypeCollector(NodeVisitor):
         """Add the function argument to type list"""
         self.add_type(get_name(node.target), Type.from_ast(node.annotation))
         self.generic_visit(node)
-
-
-def get_type_annotations(filestring: str) -> List[t.Tuple[str, Type]]:
-    """
-    Extract types from annotations
-
-    :param filestring: str: string representing code to extract types from
-    :returns: list of tuples (name, type) for variables and identifiers
-    """
-    ast: AST = ast3.parse(filestring)
-    collector: TypeCollector = TypeCollector()
-    collector.visit(ast)
-    return collector.defs
-
-
-def extract_type_annotations(in_filename: Path, out_filename: Path) -> None:
-    """Extract type annotations from input file to output file"""
-    with open(in_filename, 'r') as infile:  # type: TextIO
-        types: List[t.Tuple[str, Type]] = get_type_annotations(infile.read())
-
-    if types:
-        myutil.ensure_parents(out_filename)
-        with open(out_filename, 'w', newline='') as outfile:  # type: TextIO
-            csv.writer(outfile).writerows(types)
-
-
-if __name__ == "__main__":
-    PARSER: ArgumentParser = ArgumentParser(
-        description='Extract (name,type) pairs from python source file')
-    PARSER.add_argument('path', type=Path, help='source file')
-    PARSER.add_argument('out', type=Path, nargs='?', default=Path('out.csv'),
-                        help='output file')
-    ARGS: Namespace = PARSER.parse_args()
-
-    extract_type_annotations(ARGS.path, ARGS.out)

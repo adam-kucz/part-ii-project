@@ -2,8 +2,8 @@
 from datetime import datetime
 from functools import reduce
 import operator as op
-import os
-from typing import Callable, Mapping
+from pathlib import Path
+from typing import Callable, Mapping, Optional
 # pylint: disable=unused-import
 import sys  # noqa: F401
 
@@ -14,7 +14,7 @@ from identifier_type_data import DataLoader
 
 class CNN1d:
     """TODO: CNN1d docstring"""
-    out_dir: str
+    out_dir: Path
     train_iter: tf.data.Iterator
     val_iter: tf.data.Iterator
     iter_handle: tf.Tensor
@@ -25,7 +25,7 @@ class CNN1d:
     summary: tf.Tensor
     _sess: tf.Session
 
-    def __init__(self, params, out_dir) -> None:
+    def __init__(self, params: dict, out_dir: Path) -> None:
         self._loader = DataLoader(params['net']['identifier_len'])
         self._data_pipeline(params)
         self._set_out_dir(out_dir, self._loader.vocab, params['net'])
@@ -35,15 +35,14 @@ class CNN1d:
         self._sess.run(tf.initializers.global_variables())
         self._sess.run(tf.initializers.tables_initializer())
 
-    def _set_out_dir(self, out_dir, vocab, net_params):
+    def _set_out_dir(self, out_dir: Path, vocab, net_params):
         identifier = hash(repr((vocab, net_params)))
-        for subdir in os.listdir(out_dir):
+        for subdir in out_dir.iter_dir():
             if subdir.startswith("net{}".format(identifier)):
-                self.out_dir = os.path.join(out_dir, subdir)
+                self.out_dir = out_dir.joinpath(out_dir, subdir)
                 return
         time = datetime.now().strftime('%Y-%m-%d-%H:%M')
-        self.out_dir = os.path.join(out_dir,
-                                    "net{}-{}".format(identifier, time))
+        self.out_dir = out_dir.joinpath("net{}-{}".format(identifier, time))
 
     def _data_pipeline(self, params):
         # TODO: consider moving datasets
@@ -98,11 +97,10 @@ class CNN1d:
             print("Shape of labels: {}, logits: {}"
                   .format(labels.shape, logits.shape))
             loss = tf.losses.softmax_cross_entropy(one_hot_labels, logits)
-            _, accuracy = tf.metrics.accuracy(labels=labels,
-                                              predictions=predictions,
-                                              name='acc_op')
+            correct = tf.equal(predictions, labels)
+            accuracy = tf.reduce_mean(tf.cast(correct, "float"))
             useful = tf.logical_and(tf.not_equal(one_hot_labels[:, -1], 1),
-                                    tf.equal(predictions, labels))
+                                    correct)
             real_accuracy = tf.reduce_mean(tf.cast(useful, "float"),
                                            name="real_accuracy")
             self.metrics = {'real_accuracy': real_accuracy,
@@ -161,8 +159,6 @@ class CNN1d:
         """Runs a single epoch where the """
         metrics = dict((key, 0) for key in self.metrics)
         num_batches = 0
-        # restart accuracy calculation
-        self._sess.run(tf.local_variables_initializer())
         while True:
             try:
                 batch_metrics = runner()
@@ -177,8 +173,9 @@ class CNN1d:
     def train(self, num_epochs, learning_rate):
         """TODO: train docstring"""
         # TODO: fix metrics mess
-        summary_dir = os.path.join(self.out_dir, "summaries", "train")
-        with tf.summary.FileWriter(summary_dir, self._sess.graph) as writer:
+        train_sum_dir = self.out_dir.joinpath("summaries", "train")
+        val_sum_dir = self.out_dir.joinpath("summaries", "validate")
+        with tf.summary.FileWriter(train_sum_dir, self._sess.graph) as writer:
             handle = self._sess.run(self.train_iter.string_handle())
             for epoch in range(num_epochs):
                 self._sess.run(self.train_iter.initializer)
@@ -187,15 +184,19 @@ class CNN1d:
                     learning_rate(epoch),  # pylint: disable=cell-var-from-loop
                     writer))
                 writer.flush()
+                print("Test: {}".format(self.test(val_sum_dir)))
                 yield metrics
 
-    def test(self) -> Mapping[str, float]:
+    def test(self, summary_dir: Optional[Path] = None) -> Mapping[str, float]:
         """TODO: test docstring"""
-        self._sess.run(self.val_iter.initializer)
-        handle = self._sess.run(self.val_iter.string_handle())
-        return self.run_epoch(lambda: self._sess.run(
-            self.metrics,
-            feed_dict={self.iter_handle: handle}))
+        with tf.summary.FileWriter(summary_dir, self._sess.graph) as writer:
+            self._sess.run(self.val_iter.initializer)
+            handle = self._sess.run(self.val_iter.string_handle())
+            metrics = self.run_epoch(lambda: self._sess.run(
+                self.metrics,
+                feed_dict={self.iter_handle: handle}))
+            # writer.add_summary(metrics, step)
+            return metrics
 
     # TODO: rewrite with iterator handles
     # def predict(self, features) -> np.ndarray:
@@ -208,11 +209,10 @@ class CNN1d:
 
     def save_checkpoint(self, max_num_checkpoints) -> None:
         """Saves model with trained parameters"""
-        checkpoint_dir = os.path.abspath(os.path.join(self.out_dir,
-                                                      "checkpoints"))
-        if not os.path.exists(checkpoint_dir):
-            os.makedirs(checkpoint_dir)
-        checkpoint_prefix = os.path.join(checkpoint_dir, "model")
+        checkpoint_dir = self.out_dir.joinpath("checkpoints")
+        if not checkpoint_dir.exists():
+            checkpoint_dir.mkdir(parents=True)
+        checkpoint_prefix = checkpoint_dir.joinpath("model")
         saver = tf.train.Saver(tf.global_variables(),
                                max_to_keep=max_num_checkpoints)
         saver.save(self._sess, checkpoint_prefix,

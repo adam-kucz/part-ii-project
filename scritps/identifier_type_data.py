@@ -1,5 +1,5 @@
 """TODO: identifier_type_data module docstring"""
-import os
+from pathlib import Path
 import string
 from typing import Any, Tuple
 
@@ -8,8 +8,9 @@ from tensorflow.feature_column import (  # pylint: disable=import-error
     categorical_column_with_vocabulary_list,
     indicator_column)
 
-DIR = "/home/acalc79/synced/part-ii-project/data/sets/pairs"
-VOCABULARY_PATH = os.path.join(DIR, "vocab.txt")
+DIR: Path = Path("/home/acalc79/synced/part-ii-project" +
+                 "/data/sets/pairs_funs_as_ret")
+VOCABULARY_PATH: Path = DIR.joinpath("vocab.txt")
 
 
 class DataLoader:
