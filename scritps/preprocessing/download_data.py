@@ -94,8 +94,7 @@ if __name__ == "__main__":
     with ARGS.path.open() as infile:  # type: TextIO
         matches: Iterable = (re.search("^\\./(.*?)/", line)
                              for line in infile)
-        REPOS: Set[str] = set(match.group(1) for match in matches
-                              if match is not None)
+        REPOS: Set[str] = set(match.group(1) for match in matches if match)
 
     if not ARGS.repodir.exists():
         ARGS.repodir.mkdir(parents=True)

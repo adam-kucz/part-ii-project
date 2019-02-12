@@ -45,7 +45,7 @@ def with_added_remaining(
         found: Optional[Tuple[str, float]]\
             = get_next_project(projects_normalised,
                                groups[group][2] - g_size)
-        if found is not None:
+        if found:
             proj, num = found  # type: str, float
             result[group] = (g_size + num, g_list + [proj])
             projects_normalised.remove(found)
@@ -76,7 +76,7 @@ def get_split(
         while group_size < low:
             found: Optional[Tuple[str, float]]\
                 = get_next_project(projects_normalised, high - group_size)
-            if found is not None:
+            if found:
                 proj, num = found  # type: str, float
                 group_size += num
                 group_projs.append(proj)
@@ -163,7 +163,7 @@ if __name__ == "__main__":
     else:
         splits: Optional[Mapping[str, Tuple[float, List[str]]]]\
             = get_split(read_splits(ARGS.splits), get_projects(ARGS.datadir))
-        if splits is not None:
+        if splits:
             with ARGS.log_file.open('w') as log:
                 for split, (fraction, project_list) in splits.items():\
                         # type: str, Tuple[float, List[str]]

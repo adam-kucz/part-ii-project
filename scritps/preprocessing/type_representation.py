@@ -6,7 +6,7 @@ from typing import (Any, cast, Generic, Iterable,
                     Optional, Sequence, Union)
 import typing as t
 # pylint: disable=E0611
-from typed_ast.ast3 import (AST, Attribute, Ellipsis, Expression, expr_context,
+from typed_ast.ast3 import (AST, Attribute, Expression, expr_context,
                             Index, List,
                             Name, NameConstant, Str, Subscript, Tuple)
 import typed_ast.ast3 as ast3
@@ -105,7 +105,7 @@ class Type(Generic[T], metaclass=ABCMeta):
                                      TupleType.from_ast(ast),
                                      GenericType.from_ast(ast),
                                      FunctionType.from_ast(ast))
-                     if typ is not None), None)
+                     if typ), None)
 
     @staticmethod
     def from_str(type_string: str) -> Optional['Type']:
@@ -184,14 +184,14 @@ class GenericType(Type[T]):
         """Tries to interpret AST as representing a generic type"""
         if isinstance(ast, Subscript):
             typ: Optional[Type] = Type.from_ast(ast.value)
-            if typ is not None and isinstance(ast.slice, Index):
+            if typ and isinstance(ast.slice, Index):
                 index: Index = ast.slice
                 args: t.List[Optional[Type]]
                 if isinstance(index.value, Tuple):
                     args = [Type.from_ast(expr) for expr in index.value.elts]
                 else:
                     args = [Type.from_ast(index.value)]
-                if all(arg is not None for arg in args):
+                if all(args):
                     return GenericType(typ, cast(Iterable[Type], args))
         return None
 
@@ -224,7 +224,7 @@ class UnionType(GenericType[T]):
     def from_ast(ast: AST) -> Optional['UnionType']:
         """Tries to interpret AST as representing a union type"""
         typ: Optional[GenericType] = GenericType.from_ast(ast)
-        if typ is not None:
+        if typ:
             if str(typ.generic_typ) == 'Union':
                 return UnionType(typ.args)
             if str(typ.generic_typ) == 'Optional' and len(typ.args) == 1:
@@ -291,13 +291,12 @@ class TupleType(GenericType[T]):
                 args = [Type.from_ast(expr) for expr in index.value.elts]
                 if not args:
                     return TupleType([], empty=True)
-                if args[0] is not None and\
-                   len(args) == 2 and\
-                   isinstance(index.value.elts[1], Ellipsis):
+                if args[0] and len(args) == 2 and\
+                   isinstance(index.value.elts[1], ast3.Ellipsis):
                     return TupleType([], hom_type=args[0])
             else:
                 args = [Type.from_ast(index.value)]
-            if all(arg is not None for arg in args):
+            if all(args):
                 return TupleType(cast(Iterable[Type], args))
         return None
 
@@ -348,8 +347,7 @@ class FunctionType(GenericType[T]):
                             = list(map(Type.from_ast, fargs.elts))
                         ret: Optional[Type]\
                             = Type.from_ast(index.value.elts[1])
-                        if all(arg is not None for arg in farg_types) and\
-                           ret is not None:
+                        if all(farg_types) and ret:
                             return FunctionType(
                                 cast(Iterable[Type], farg_types), ret)
         return None
@@ -379,7 +377,7 @@ class NestedType(Type[T]):
         if isinstance(ast, Attribute):
             module: Optional[Type] = Type.from_ast(ast.value)
             typ: Optional[Type] = Type.from_str(ast.attr)
-            if module is not None and typ is not None:
+            if module and typ:
                 return NestedType(module, typ)
         return None
 

@@ -1,9 +1,11 @@
 """TODO"""
 from datetime import datetime
 from functools import reduce
+from hashlib import md5
+import json
 import operator as op
 from pathlib import Path
-from typing import Callable, Mapping, Optional
+from typing import Callable, Mapping
 # pylint: disable=unused-import
 import sys  # noqa: F401
 
@@ -19,7 +21,8 @@ class CNN1d:
     val_iter: tf.data.Iterator
     iter_handle: tf.Tensor
     outputs: Mapping[str, tf.Tensor]
-    metrics: Mapping[str, tf.Tensor]
+    metric_vals: Mapping[str, tf.Tensor]
+    metric_ops: Mapping[str, tf.Tensor]
     learning_rate: tf.Tensor
     train_op: tf.Operation
     summary: tf.Tensor
@@ -36,13 +39,17 @@ class CNN1d:
         self._sess.run(tf.initializers.tables_initializer())
 
     def _set_out_dir(self, out_dir: Path, vocab, net_params):
-        identifier = hash(repr((vocab, net_params)))
-        for subdir in out_dir.iter_dir():
-            if subdir.startswith("net{}".format(identifier)):
-                self.out_dir = out_dir.joinpath(out_dir, subdir)
-                return
-        time = datetime.now().strftime('%Y-%m-%d-%H:%M')
-        self.out_dir = out_dir.joinpath("net{}-{}".format(identifier, time))
+        encoded = json.dumps((vocab, net_params),
+                             sort_keys=True).encode('utf-8')
+        identifier = md5(encoded).hexdigest()  # nosec: B303
+        subdirs = tuple(out_dir.glob("net{}-*".format(identifier)))
+        if subdirs:
+            self.out_dir = out_dir.joinpath(out_dir, subdirs[0])
+        else:
+            time = datetime.now().strftime('%Y-%m-%d-%H-%M')
+            self.out_dir = out_dir.joinpath("net{}-{}"
+                                            .format(identifier, time))
+        print("Out directory: {}".format(self.out_dir))
 
     def _data_pipeline(self, params):
         # TODO: consider moving datasets
@@ -93,29 +100,9 @@ class CNN1d:
             self.outputs = {'logits': logits,
                             'predictions': predictions}
 
-        with tf.name_scope("metrics"):
-            print("Shape of labels: {}, logits: {}"
-                  .format(labels.shape, logits.shape))
-            loss = tf.losses.softmax_cross_entropy(one_hot_labels, logits)
-            correct = tf.equal(predictions, labels)
-            accuracy = tf.reduce_mean(tf.cast(correct, "float"))
-            useful = tf.logical_and(tf.not_equal(one_hot_labels[:, -1], 1),
-                                    correct)
-            real_accuracy = tf.reduce_mean(tf.cast(useful, "float"),
-                                           name="real_accuracy")
-            self.metrics = {'real_accuracy': real_accuracy,
-                            'accuracy': accuracy,
-                            'loss': loss}
-
-        # print_op = tf.print("labels: ", labels, "outputs:", self.outputs,
-        #                     output_stream=sys.stdout)
-        # Write summary.
-        with tf.variable_scope("logging"):
-            # tf.control_dependencies([print_op]):  # noqa: E127
-            for name, metric in self.metrics.items():
-                tf.summary.scalar(name, metric)
-            self.summary = tf.summary.merge_all()
-
+        print("Shape of labels: {}, logits: {}"
+              .format(labels.shape, logits.shape))
+        loss = tf.losses.softmax_cross_entropy(one_hot_labels, logits)
         # Create training op.
         self.learning_rate = tf.placeholder(tf.float32, shape=(),
                                             name='learning_rate')
@@ -126,12 +113,41 @@ class CNN1d:
         self.train_op = tf.train.AdagradOptimizer(self.learning_rate)\
                                 .minimize(loss, tf.train.get_global_step())
 
+        with tf.name_scope("metrics"):
+            self.metric_vals = {}
+            self.metric_ops = {}
+            self._add_metric('loss', tf.metrics.mean(loss))
+            self._add_metric('accuracy',
+                             tf.metrics.accuracy(labels, predictions))
+            self._add_metric('real_accuracy',
+                             tf.metrics.accuracy(
+                                 labels, predictions,
+                                 tf.not_equal(one_hot_labels[:, -1], 1)))
+            self._add_metric(
+                'top5', tf.metrics.mean(tf.nn.in_top_k(logits, labels, 5)))
+            self._add_metric(
+                'top3', tf.metrics.mean(tf.nn.in_top_k(logits, labels, 3)))
+
+        # print_op = tf.print("labels: ", labels, "outputs:", self.outputs,
+        #                     output_stream=sys.stdout)
+        # Write summary.
+        with tf.variable_scope("logging"): 
+            # tf.control_dependencies([print_op]):  # noqa: E127
+            for name, metric in self.metric_vals.items():
+                tf.summary.scalar(name, metric)
+            self.summary = tf.summary.merge_all()
+
         total_params = reduce(
             op.add,
             (reduce(op.mul, (dim.value for dim in var.get_shape()), 1)
              for var in tf.trainable_variables()),
             0)
         print("Total number of trainable parameters: {}".format(total_params))
+
+    def _add_metric(self, name, metric):
+        metric_value, metric_op = metric
+        self.metric_vals[name] = metric_value
+        self.metric_ops[name] = metric_op
 
     def __enter__(self):
         return self
@@ -146,7 +162,7 @@ class CNN1d:
     def train_step(self, handle, learning_rate, writer=None) -> None:
         """TODO: train_step docstring"""
         _, metrics, summary, step = self._sess.run(
-            (self.train_op, self.metrics,
+            (self.train_op, self.metric_ops,
              self.summary, tf.train.get_global_step()),
             feed_dict={self.iter_handle: handle,
                        self.learning_rate: learning_rate})
@@ -157,46 +173,42 @@ class CNN1d:
     def run_epoch(self, runner: Callable[[], Mapping[str, float]])\
             -> Mapping[str, float]:
         """Runs a single epoch where the """
-        metrics = dict((key, 0) for key in self.metrics)
-        num_batches = 0
+        self._sess.run(tf.local_variables_initializer())
         while True:
             try:
-                batch_metrics = runner()
-                num_batches += 1
-                for key, val in batch_metrics.items():
-                    metrics[key] += val
+                runner()
             except tf.errors.OutOfRangeError:
-                for key in metrics:
-                    metrics[key] /= num_batches
-                return metrics
+                break
+        return self._sess.run(self.metric_vals)
 
-    def train(self, num_epochs, learning_rate):
+    def run(self, num_epochs, learning_rate, run_name=None):
         """TODO: train docstring"""
-        # TODO: fix metrics mess
-        train_sum_dir = self.out_dir.joinpath("summaries", "train")
-        val_sum_dir = self.out_dir.joinpath("summaries", "validate")
-        with tf.summary.FileWriter(train_sum_dir, self._sess.graph) as writer:
+        run_dir = self.out_dir.joinpath("summaries", run_name or "unnamed")
+        train_dir = run_dir.joinpath("train")
+        val_dir = run_dir.joinpath("validate")
+        with tf.summary.FileWriter(train_dir, self._sess.graph) as writer,\
+             tf.summary.FileWriter(val_dir) as val_writer:  # noqa: E127
             handle = self._sess.run(self.train_iter.string_handle())
             for epoch in range(num_epochs):
                 self._sess.run(self.train_iter.initializer)
+                # pylint: disable=cell-var-from-loop
                 metrics = self.run_epoch(lambda: self.train_step(
                     handle,
-                    learning_rate(epoch),  # pylint: disable=cell-var-from-loop
-                    writer))
-                writer.flush()
-                print("Test: {}".format(self.test(val_sum_dir)))
+                    learning_rate(epoch)))
+                writer.add_summary(self._sess.run(self.summary), epoch)
+                print("Test: {}".format(self.test(val_writer, epoch)))
                 yield metrics
 
-    def test(self, summary_dir: Optional[Path] = None) -> Mapping[str, float]:
+    def test(self, writer=None, epoch=None) -> Mapping[str, float]:
         """TODO: test docstring"""
-        with tf.summary.FileWriter(summary_dir, self._sess.graph) as writer:
-            self._sess.run(self.val_iter.initializer)
-            handle = self._sess.run(self.val_iter.string_handle())
-            metrics = self.run_epoch(lambda: self._sess.run(
-                self.metrics,
-                feed_dict={self.iter_handle: handle}))
-            # writer.add_summary(metrics, step)
-            return metrics
+        self._sess.run(self.val_iter.initializer)
+        handle = self._sess.run(self.val_iter.string_handle())
+        metrics = self.run_epoch(lambda: self._sess.run(
+            self.metric_ops,
+            feed_dict={self.iter_handle: handle}))
+        if writer and epoch is not None:
+            writer.add_summary(self._sess.run(self.summary), epoch)
+        return metrics
 
     # TODO: rewrite with iterator handles
     # def predict(self, features) -> np.ndarray:

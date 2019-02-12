@@ -9,7 +9,7 @@ from tensorflow.feature_column import (  # pylint: disable=import-error
     indicator_column)
 
 DIR: Path = Path("/home/acalc79/synced/part-ii-project" +
-                 "/data/sets/pairs_funs_as_ret")
+                 "/data/sets/pairs")
 VOCABULARY_PATH: Path = DIR.joinpath("vocab.txt")
 
 

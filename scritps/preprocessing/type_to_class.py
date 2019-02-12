@@ -12,6 +12,7 @@ def main(in_filename: Path, out_filename: Path, percentage: Path):
         reader = csv.reader(csvfile, delimiter=',')
         types = tuple(map(lambda t: t[1], reader))[1:]
         included = 0
+        print("Total number of types: {}".format(len(Counter(types))))
         for typ, count in Counter(types).most_common():
             print(typ, file=vocabfile)
             included += count

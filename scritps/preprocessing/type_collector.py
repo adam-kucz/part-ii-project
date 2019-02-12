@@ -22,13 +22,7 @@ B = TypeVar('B')  # pylint: disable=invalid-name
 # pylint: disable=invalid-name
 def bind(a: Optional[A], f: Callable[[A], Optional[B]]) -> Optional[B]:
     """Monadic bind for the Option monad"""
-    return f(a) if a is not None else None
-
-
-# pylint: disable=invalid-name
-def from_option(a: A, option_a: Optional[A]) -> A:
-    """Return value in Optional if present or default otherwise"""
-    return option_a if option_a is not None else a
+    return f(a) if a else None
 
 
 def get_name(name: AST) -> Optional[str]:
@@ -37,7 +31,7 @@ def get_name(name: AST) -> Optional[str]:
         return name.id
     if isinstance(name, Attribute):
         module: Optional[str] = get_name(name.value)
-        return module + '.' + name.attr if module is not None else None
+        return bind(lambda x: x + '.' + name.attr, module)
     return None
 
 
@@ -47,7 +41,7 @@ def get_names(names: Union[AST, Sequence[AST]]) -> List[str]:
         if isinstance(names, Tuple):
             return get_names(names.elts)
         name: Optional[str] = get_name(names)
-        return [name] if name is not None else []
+        return [name] if name else []
     nam_its: Iterable[Iterable[str]] = (get_names(nam) for nam in names)
     return [nam for nams in nam_its for nam in nams]
 
@@ -78,7 +72,7 @@ class TypeCollector(NodeVisitor):
                  name: Optional[str],
                  typ: Optional[Type]) -> None:
         """Saves type mapping if typ present"""
-        if name is not None and typ is not None and typ.kind != Kind.EMPTY:
+        if name and typ and typ.kind != Kind.EMPTY:
             self.defs.append((name, typ))
 
     def add_types(self: 'TypeCollector',
@@ -96,9 +90,8 @@ class TypeCollector(NodeVisitor):
         args: Iterable[Optional[Type]]\
             = (bind(arg.annotation, Type.from_ast)
                for arg in node.args.args)
-        arg_types: List[Type] = [from_option(UNANNOTATED, arg) for arg in args]
-        ret_type: Type = from_option(UNANNOTATED,
-                                     bind(node.returns, Type.from_ast))
+        arg_types: List[Type] = [arg or UNANNOTATED for arg in args]
+        ret_type: Type = bind(node.returns, Type.from_ast) or UNANNOTATED
         self.add_type(node.name, FunctionType(arg_types, ret_type))
         # self.add_type(node.name, parse_type(node.type_comment))
         self.generic_visit(node)
@@ -128,7 +121,7 @@ class TypeCollector(NodeVisitor):
         """Add with variables if type comment present"""
         self.add_types(get_names([item.optional_vars
                                   for item in node.items
-                                  if item.optional_vars is not None]),
+                                  if item.optional_vars]),
                        to_list(bind(node.type_comment,
                                     Type.from_type_comment)))
         self.generic_visit(node)
