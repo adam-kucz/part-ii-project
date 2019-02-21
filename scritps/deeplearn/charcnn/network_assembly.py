@@ -27,8 +27,8 @@ class Modular(FullNet):
         self._out = output_layer
         self.log = log
 
-    def __call__(self, data_tensor: Tuple[tf.Tensor, ...]) -> OutputNet:
-        inputs, labels = self.data(data_tensor)
+    def __call__(self, data_tensors: Tuple[tf.Tensor, ...]) -> OutputNet:
+        inputs, labels = self.data(data_tensors)
         outputs = self.core(inputs)
         result = self._out(outputs, labels)
 

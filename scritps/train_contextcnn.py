@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 
-from deeplearn.charcnn.standalone import FullCharCNN
+from deeplearn.contextcnn.standalone import FullContextCNN
 
 
 DATA_DIR: Path = Path("/home/acalc79/synced/part-ii-project" +  # noqa: W504
@@ -10,20 +10,30 @@ VOCAB_PATH: Path = DATA_DIR.joinpath("vocab.txt")
 TRAIN_PATH: Path = DATA_DIR.joinpath("train.csv")
 VALIDATE_PATH: Path = DATA_DIR.joinpath("validate.csv")
 OUT_PATH: Path = Path("/home/acalc79/synced/part-ii-project/out")
-IDENTIFIER_LENGTH: int = 15
+IDENTIFIER_LENGTH: int = 12
+CONTEXT_LENGTH: int = 8
+CONTEXT_SIZE = 5
 
 
 def main(num_epochs, batch_size, learn_rate, run_name, out_path=OUT_PATH):
-    # Build a CNN with 5 hidden layers
-    params = {'convolutional': [{'filters': 32, 'kernel_size': 3},
-                                {'filters': 32, 'kernel_size': 3},
-                                {'filters': 24, 'kernel_size': 3},
-                                {'filters': 16, 'kernel_size': 3}],
-              'dense': [{'units': 48},
-                        {'units': 48}]}
+    central_charcnn = {'convolutional': [{'filters': 32, 'kernel_size': 3},
+                                         {'filters': 24, 'kernel_size': 3},
+                                         {'filters': 20, 'kernel_size': 3},
+                                         {'filters': 16, 'kernel_size': 3}],
+                       'dense': [{'units': 24},
+                                 {'units': 16}]}
+    context_charcnn = {'convolutional': [{'filters': 20, 'kernel_size': 3},
+                                         {'filters': 15, 'kernel_size': 3},
+                                         {'filters': 10, 'kernel_size': 3}],
+                       'dense': [{'units': 16},
+                                 {'units': 8}]}
+    params = {'center': central_charcnn,
+              'context': context_charcnn,
+              'aggregate': [{'units': 32},
+                            {'units': 24}]}
 
-    with FullCharCNN(VOCAB_PATH, IDENTIFIER_LENGTH,
-                     batch_size, params, out_path, print) as network:
+    with FullContextCNN(VOCAB_PATH, IDENTIFIER_LENGTH, CONTEXT_LENGTH,
+                        batch_size, params, out_path, print) as network:
         try:
             network.restore_checkpoint()
             print("Successfully restored network with epoch {}"

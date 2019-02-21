@@ -9,6 +9,9 @@ __all__ = ['CoreNet', 'DataInterface', 'DataMode', 'DataProcessor',
            'DataReader', 'FullNet', 'OutputNet']
 
 
+Tensors = Tuple[tf.Tensor, ...]
+
+
 @unique
 class DataMode(Flag):
     """
@@ -35,8 +38,7 @@ class DataMode(Flag):
 
 class DataReader(ABC):
     @abstractmethod
-    def __call__(self,
-                 path: Path,
+    def __call__(self, path: Path,
                  mode: Optional[DataMode]) -> tf.data.Iterator:
         pass
 
@@ -50,28 +52,25 @@ class Parametrized(ABC):
 
 class DataInterface(Parametrized):
     @abstractmethod
-    def __call__(self, handle: tf.Tensor) -> Tuple[tf.Tensor, ...]:
+    def __call__(self, handle: tf.Tensor) -> Tensors:
         pass
 
 
-# TODO: generalize output types to something like Tuple[tf.Tensor, ...]
 class DataProcessor(Parametrized):
     @abstractmethod
-    def __call__(self, data_tensor: Tuple[tf.Tensor, ...])\
-            -> Tuple[tf.Tensor, tf.Tensor]:
+    def __call__(self, data_tensor: Tensors) -> Tuple[Tensors, Tensors]:
         pass
 
 
-# TODO: generalize types to something like Tuple[tf.Tensor, ...]
 class CoreNet(Parametrized):
     @abstractmethod
-    def __call__(self, inputs: tf.Tensor) -> tf.Tensor:
+    def __call__(self, inputs: Tensors) -> Tensors:
         pass 
 
 
 class OutputNet(Parametrized):
     @abstractmethod
-    def __call__(self, inputs: tf.Tensor, labels: tf.Tensor) -> 'OutputNet':
+    def __call__(self, inputs: Tensors, labels: Tensors) -> 'OutputNet':
         pass
 
     @property
@@ -107,7 +106,7 @@ class OutputNet(Parametrized):
 
 class FullNet(Parametrized):
     @abstractmethod
-    def __call__(self, data: Tuple[tf.Tensor, ...]) -> OutputNet:
+    def __call__(self, data: Tensors) -> OutputNet:
         pass
 
     @property

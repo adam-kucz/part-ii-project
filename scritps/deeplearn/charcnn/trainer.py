@@ -24,7 +24,9 @@ class Trainer(tf.Session):
         super().__init__(graph=graph)
         self.get_iterator = data_reader
         self.iter_handle: tf.Tensor = tf.placeholder(tf.string, shape=())
-        self.net: OutputNet = network(data_interface(self.iter_handle))
+        data = data_interface(self.iter_handle)
+        print("Data: {}".format(data))
+        self.net: OutputNet = network(data)
         params = merge_parametrized(('net', network), ('data', data_interface))
         self.io = IO(out_dir, params, self.net.metric_vals, self)
         self.run(tf.initializers.global_variables())

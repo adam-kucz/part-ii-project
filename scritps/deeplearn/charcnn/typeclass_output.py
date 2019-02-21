@@ -1,4 +1,4 @@
-from typing import Callable, Mapping
+from typing import Callable, Mapping, Tuple
 
 import tensorflow as tf
 
@@ -11,7 +11,7 @@ def typeclass_output(outputs: tf.Tensor,
                      one_hot_labels: tf.Tensor,
                      class_num: int,
                      log: Callable[[str], None] = lambda _: None):
-    return TypeclassOutput(class_num, log)(outputs, one_hot_labels)
+    return TypeclassOutput(class_num, log)((outputs,), (one_hot_labels,))
 
 
 class TypeclassOutput(OutputNet):
@@ -34,8 +34,10 @@ class TypeclassOutput(OutputNet):
         self._log = log
 
     def __call__(self,
-                 outputs: tf.Tensor,
-                 one_hot_labels: tf.Tensor) -> 'TypeclassOutput':
+                 outputs: Tuple[tf.Tensor, ...],
+                 label_tensors: Tuple[tf.Tensor, ...]) -> 'TypeclassOutput':
+        one_hot_labels = label_tensors[0]
+
         with tf.name_scope("counters"):
             tf.train.create_global_step()
             self._epoch = tf.get_variable('epoch', (), tf.int32,
@@ -48,7 +50,7 @@ class TypeclassOutput(OutputNet):
                       .format(one_hot_labels.shape, labels.shape))
 
         with tf.name_scope("output"):
-            logits = tf.layers.dense(outputs,
+            logits = tf.layers.dense(outputs[0],
                                      self._class_num,
                                      activation=None)
             predictions = tf.argmax(logits, 1)

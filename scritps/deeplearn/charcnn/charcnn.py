@@ -1,4 +1,4 @@
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, Mapping, Tuple
 
 import tensorflow as tf
 
@@ -10,7 +10,7 @@ __all__ = ['charcnn', 'CharCNN']
 def charcnn(one_hot_chars: tf.Tensor,
             params: Mapping[str, Any],
             log: Callable[[str], None] = lambda _: None) -> tf.Tensor:
-    return CharCNN(params, log)(one_hot_chars)
+    return CharCNN(params, log)((one_hot_chars,))
 
 
 # TODO: consider inheriting from tf.layers.Layer or tf.keras.layers.Layer
@@ -24,13 +24,15 @@ class CharCNN(CoreNet):
         self.log = log
         self.separate_scopes = separate_scopes
 
-    def __call__(self, one_hot_chars: tf.Tensor) -> tf.Tensor:
+    def __call__(self, inputs: Tuple[tf.Tensor, ...]) -> tf.Tensor:
+        one_hot_chars = inputs[0]
         self.log("Shape of one_hot_chars: {}".format(one_hot_chars.shape))
         with tf.name_scope("conv"):
             tensor = self._convolutional(one_hot_chars)
         with tf.name_scope("dense"):
+            # TODO: replace deprecated
             tensor = self._dense(tf.layers.flatten(tensor))
-        return tensor
+        return (tensor,)
 
     def _convolutional(self, tensor: tf.Tensor) -> tf.Tensor:
         for i, layer_params in enumerate(self.conv_params):
