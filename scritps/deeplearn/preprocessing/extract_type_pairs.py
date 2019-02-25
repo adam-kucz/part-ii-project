@@ -4,14 +4,13 @@
 from argparse import ArgumentParser, Namespace
 import csv
 from pathlib import Path
-from typing import List
+from typing import List, IO  # noqa: F401
 import typing as t
 
 import typed_ast.ast3 as ast3
 
 from type_representation import Type
-from type_collector import TypeCollector
-from type_collector_fun_as_ret import TypeCollectorFunAsRet
+from type_collector import TypeCollector, TypeCollectorFunAsRet
 
 
 def get_type_annotations(
@@ -39,7 +38,7 @@ def extract_type_annotations(in_filename: Path,
     if types:
         if not out_filename.parent.exists():
             out_filename.parent.mkdir(parents=True)
-        with out_filename.open('w', newline='') as outfile:  # type: TextIO
+        with out_filename.open('w', newline='') as outfile:  # type: IO
             csv.writer(outfile).writerows(types)
 
 

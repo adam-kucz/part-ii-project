@@ -1,11 +1,21 @@
 """Collection of useful methods that do not belong anywhere else"""
 from hashlib import md5
 import json
-from typing import Any, Dict, Mapping, Tuple
+from typing import Any, Callable, Dict, Mapping, Optional, Tuple, TypeVar
 
 from .abstract.modules import Parametrized
 
-__all__ = ['stable_hash', 'merge_parametrized', 'merge_dicts']
+__all__ = ['bind', 'merge_dicts', 'merge_parametrized', 'stable_hash']
+
+
+A = TypeVar('A')  # pylint: disable=invalid-name
+B = TypeVar('B')  # pylint: disable=invalid-name
+
+
+# pylint: disable=invalid-name
+def bind(a: Optional[A], f: Callable[[A], Optional[B]]) -> Optional[B]:
+    """Monadic bind for the Option monad"""
+    return f(a) if a else None
 
 
 def stable_hash(data: Any) -> bytes:

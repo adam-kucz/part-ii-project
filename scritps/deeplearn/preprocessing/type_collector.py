@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """NodeCollector to extract identifier-type pairs from python files"""
 
-from typing import (Callable, Iterable, List,  # noqa: F401
-                    Optional, Sequence, TypeVar, Union)
+from typing import Iterable, List, Optional, Sequence, Union
 import typing as t
 
 # pylint: disable=no-name-in-module
@@ -12,17 +11,7 @@ from typed_ast.ast3 import (
 
 from type_representation import (
     FunctionType, is_tuple, GenericType, Kind, Type, UNANNOTATED)
-
-
-A = TypeVar('A')  # pylint: disable=invalid-name
-B = TypeVar('B')  # pylint: disable=invalid-name
-
-
-# TODO: move to a utility module
-# pylint: disable=invalid-name
-def bind(a: Optional[A], f: Callable[[A], Optional[B]]) -> Optional[B]:
-    """Monadic bind for the Option monad"""
-    return f(a) if a else None
+from ..util import bind
 
 
 def get_name(name: AST) -> Optional[str]:
@@ -31,7 +20,8 @@ def get_name(name: AST) -> Optional[str]:
         return name.id
     if isinstance(name, Attribute):
         module: Optional[str] = get_name(name.value)
-        return bind(lambda x: x + '.' + name.attr, module)
+        if module:
+            return module + '.' + name.attr
     return None
 
 
@@ -149,4 +139,13 @@ class TypeCollector(NodeVisitor):
             node: AnnAssign) -> None:
         """Add the function argument to type list"""
         self.add_type(get_name(node.target), Type.from_ast(node.annotation))
+        self.generic_visit(node)
+
+
+class TypeCollectorFunAsRet(TypeCollector):
+    """TypeCollector that assigns return types to functions"""
+    # pylint: disable=invalid-name
+    def visit_FunctionDef(self, node: FunctionDef) -> None:
+        """Add the function definition node with return type to the list"""
+        self.add_type(node.name, bind(node.returns, Type.from_ast))
         self.generic_visit(node)
