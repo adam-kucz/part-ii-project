@@ -2,7 +2,7 @@ from typing import Callable, Mapping, Tuple
 
 import tensorflow as tf
 
-from ..abstract.modules import OutputNet
+from ..abstract.modules import OutputNet, Collections
 
 __all__ = ['typeclass_output', 'TypeclassOutput']
 
@@ -35,7 +35,8 @@ class TypeclassOutput(OutputNet):
 
     def __call__(self,
                  outputs: Tuple[tf.Tensor, ...],
-                 label_tensors: Tuple[tf.Tensor, ...]) -> 'TypeclassOutput':
+                 label_tensors: Tuple[tf.Tensor, ...],
+                 vcs: Collections = None) -> 'TypeclassOutput':
         one_hot_labels = label_tensors[0]
 
         with tf.name_scope("counters"):
@@ -50,9 +51,11 @@ class TypeclassOutput(OutputNet):
                       .format(one_hot_labels.shape, labels.shape))
 
         with tf.name_scope("output"):
-            logits = tf.layers.dense(outputs[0],
-                                     self._class_num,
-                                     activation=None)
+            final_layer = tf.keras.layers.Dense(self._class_num,
+                                                activation=None)
+            tf.get_default_graph().add_to_collections(
+                vcs, final_layer.trainable_variables)
+            logits = final_layer(outputs[0])
             predictions = tf.argmax(logits, 1)
 
         with tf.name_scope("training"):
