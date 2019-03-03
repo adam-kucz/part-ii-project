@@ -14,12 +14,15 @@
   finished [1]
 * 20:45-21:15 0.50h
   read tensorflow documentation on SavedModels
-* 21:15-23:00 1.75h
-  implement independent module saving
+* 21:15-23:15 2.00
+  start changing class structure to use keras layers
 
-Saturday 2 Mar:
+#### Saturday 2 Mar
 
-
+#### Sunday 3 Mar
+* 17:00-22:15 5.25h
+  read tensorflow documentation on keras and keras source
+  further convert modules into keras
 
 
 ## Bibliography

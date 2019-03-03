@@ -1,19 +1,19 @@
 from abc import ABC, abstractmethod
 from enum import auto, Flag, unique
 from pathlib import Path
-from typing import (Any, Dict, Iterable, List, Mapping, Optional,
+from typing import (Any, Dict, Iterable, Generic, List, Mapping, Optional,
                     Tuple, TypeVar, Union)
 
 import tensorflow as tf
 
-__all__ = ['Collection', 'Collections', 'DataInterface', 'DataMode',
+__all__ = ['Collection', 'Collections', 'DataMode',
            'DataReader', 'FullNet', 'OutputNet', 'Some', 'Tensors']
 
 T = TypeVar('T')  # pylint: disable=invalid-name
+S = TypeVar('S')  # pylint: disable=invalid-name
 Some = Union[T, Tuple[T, ...], List[T]]
 Tensors = Some[tf.Tensor]
 Shape = Tuple[Optional[int], ...]
-Layer = tf.keras.layers.Layer
 Collection = Union[str, Iterable[str]]
 Collections = Optional[Union[Collection, Dict[str, Collection]]]
 
@@ -27,7 +27,6 @@ class DataMode(Flag):
     LABELS - labels are present
     BATCH - dataset batched
     SHUFFLE - dataset will be shuffled
-    ONEPASS - dataset suitable for only one pass
     TRAIN - batched, inputs and labels with shuffling
     TEST - batched, inputs and labels, no shuffling
     PREDICT - batched, inputs only, no shuffling, one pass only
@@ -45,7 +44,7 @@ class DataMode(Flag):
 class DataReader(ABC):
     @abstractmethod
     def __call__(self, path: Path,
-                 mode: Optional[DataMode]) -> tf.data.Iterator:
+                 mode: Optional[DataMode]) -> tf.data.Dataset:
         pass
 
 
@@ -56,10 +55,39 @@ class Parametrized(ABC):
         pass
 
 
-class Module(Layer, Parametrized):
-    def add_sublayer(self, sublayer: Layer) -> None:
-        self._trainable_weights.extend(sublayer.trainable_weights)
-        self._non_trainable_weights.extend(sublayer.trainable_weights)
+class Processor(Parametrized, Generic[S, T]):
+    @abstractmethod
+    def __call__(self, a: S) -> T:
+        pass
+
+
+# notes on keras layers
+#
+# weights are added in build()
+# losses are added in call()
+# updates are added in call()
+# TODO: consider if it can be replaced by tf.keras.engine.Network
+class Module(tf.keras.layers.Layer, Parametrized):
+    _sublayers: List[tf.keras.layers.Layer]
+
+    def __init__(self):
+        super().__init__()
+        self._sublayers = []
+
+    @property
+    def sublayers(self) -> Iterable[tf.keras.layers.Layer]:
+        """Adds sublayer to the module, do not call after build()"""
+        return self._sublayers[:]
+
+    def add_sublayer(self, sublayer: tf.keras.layers.Layer) -> None:
+        self._sublayers.append(sublayer)
+
+    def get_trainable_weight_dict(self) -> Dict[str, tf.Variable]:
+        weights = {}
+        for i, layer in enumerate(self.sublayers):
+            for j, weight in enumerate(layer.trainable_weights):
+                weights["layer{}_w{}".format(i, j)] = weight
+        return weights
 
     @abstractmethod
     def compute_output_shape(self, input_shape: Shape) -> Shape:
@@ -67,48 +95,48 @@ class Module(Layer, Parametrized):
 
     @abstractmethod
     def build(self, input_shape: Shape) -> None:
-        pass
+        for sublayer in self._sublayers:  # type: tf.keras.layers.Layer
+            self._trainable_weights.extend(sublayer.trainable_weights)
+            self._non_trainable_weights.extend(sublayer.trainable_weights)
+        super().build(input_shape)
 
     @abstractmethod
-    def call(self, inputs: Tensors) -> Tensors:
-        pass
+    def call(self, inputs: Tensors, **kwargs) -> Tensors:
+        for sublayer in self._sublayers:  # type: tf.keras.layers.Layer
+            self._updates.extend(sublayer.updates)
+            self._losses.extend(sublayer.losses)
+        return super().call(inputs, kwargs)
 
 
+# TODO: consider if it can be replaced by tf.keras.models.Sequential
 class LinearModule(Module):
-    def __init__(self) -> None:
-        self._sublayers: List[Layer] = []
-
-    def add_sublayer(self, sublayer: Layer) -> None:
-        super().add_sublayer(sublayer)
-        self._sublayers.append(sublayer)
+    def __init__(self, layers: Iterable[tf.keras.layers.Layer]) -> None:
+        super().__init__()
+        for layer in layers:  # type: tf.keras.layers.Layer
+            self.add_sublayer(layer)
 
     def compute_output_shape(self, input_shape: Shape) -> Shape:
         shape = input_shape
-        for layer in self._sublayers:  # type: Layer
+        for layer in self.sublayers:  # type: tf.keras.layers.Layer
             shape = layer.compute_output_shape(shape)
         return shape
 
     def build(self, input_shape: Shape) -> None:
         shape = input_shape
-        for layer in self._sublayers:  # type: Layer
+        for layer in self.sublayers:  # type: tf.keras.layers.Layer
             layer.build(shape)
             shape = layer.compute_output_shape(shape)
-        super().build()
+        super().build(input_shape)
 
-    def call(self, inputs: Tensors) -> Tensors:
+    def call(self, inputs: Tensors, **kwargs) -> Tensors:
+        super().call(inputs, **kwargs)
         tensors = inputs
-        for layer in self._sublayers:  # type: Layer
+        for layer in self.sublayers:  # type: tf.keras.layers.Layer
             tensors = layer(tensors)
         return tensors
 
 
-class DataInterface(Module):
-    """Interface with the dataset"""
-    @abstractmethod
-    def __call__(self, handle: tf.Tensor) -> Tensors:
-        pass
-
-class OutputNet(Parametrized):
+class OutputNet(tf.keras.Model):
     """
     Final layer of the network
 
@@ -149,6 +177,7 @@ class OutputNet(Parametrized):
         pass
 
 
+# TODO: consider also subclassing tf.keras.layers.Model
 class FullNet(Parametrized):
     @abstractmethod
     def __call__(self, data: Tensors) -> OutputNet:

@@ -29,9 +29,8 @@ class CsvReader(DataReader):
             shape += self.input_shape
         if mode & DataMode.LABELS:
             shape += self.label_shape
-        dataset = tf.data.experimental.CsvDataset(str(path),
-                                                  shape,
-                                                  header=True)
+        return tf.data.experimental.CsvDataset(str(path), shape, header=True)
+
         if mode & DataMode.TRAIN:
             dataset = dataset.shuffle(1000)
         if mode & DataMode.BATCH:
