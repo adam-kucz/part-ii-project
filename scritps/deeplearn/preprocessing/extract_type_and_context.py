@@ -2,6 +2,7 @@
 """Module for parsing python files"""
 import csv
 from pathlib import Path
+# noqa justified because mypy needs IO in type comment
 from typing import List, IO, Iterable, Tuple  # noqa: F401
 
 import astor
@@ -46,8 +47,8 @@ def get_type_context(
     """
     # pylint: disable=no-member
     ast: ast3.AST = ast3.parse(filepath.read_text())
-    collector: PosTypeCollector = PosTypeCollector() if not func_as_ret\
-                                  else PosTypeCollectorFunAsRet()  # noqa: E127
+    collector: PosTypeCollector\
+        = PosTypeCollector() if not func_as_ret else PosTypeCollectorFunAsRet()
     collector.visit(ast)
     stripped_tree = astor.parse_file(filepath)
     # pylint: disable=protected-access

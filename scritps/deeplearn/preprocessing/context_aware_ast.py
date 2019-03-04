@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """NodeCollector to extract identifier-type pairs from python files"""
-import ast as ast
+import ast
 from typing import List, Union
 
 # pylint: disable=no-name-in-module

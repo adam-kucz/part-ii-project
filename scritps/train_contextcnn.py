@@ -4,8 +4,8 @@ from pathlib import Path
 from deeplearn.contextcnn.standalone import FullContextCNN
 
 
-DATA_DIR: Path = Path("/home/acalc79/synced/part-ii-project" +  # noqa: W504
-                      "/data/sets/pairs_funs_as_ret")
+DATA_DIR: Path = Path("/home/acalc79/synced/part-ii-project/"
+                      "data/sets/pairs_funs_as_ret")
 VOCAB_PATH: Path = DATA_DIR.joinpath("vocab.txt")
 TRAIN_PATH: Path = DATA_DIR.joinpath("train.csv")
 VALIDATE_PATH: Path = DATA_DIR.joinpath("validate.csv")

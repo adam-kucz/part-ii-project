@@ -5,10 +5,9 @@ import csv
 from pathlib import Path
 
 
-def main(in_filename: Path, out_filename: Path, percentage: Path):
-    """TODO: learn_type_to_class docstring"""
+def main(in_filename: Path, out_filename: Path, percentage: float):
     with in_filename.open(newline='') as csvfile,\
-         out_filename.open(mode='w') as vocabfile:  # noqa: E127
+            out_filename.open(mode='w') as vocabfile:
         reader = csv.reader(csvfile, delimiter=',')
         types = tuple(map(lambda t: t[1], reader))[1:]
         included = 0

@@ -155,7 +155,7 @@ class SimpleType(Type[T]):
 class GenericType(Type[T]):
     """Type that corresponds to a generic type (with type arguments)"""
     generic_typ: Type
-    args: t.Tuple[Type]
+    args: t.Tuple[Type, ...]
 
     def __init__(self: 'GenericType[T]',
                  generic_typ: Type,
@@ -163,7 +163,7 @@ class GenericType(Type[T]):
         self.generic_typ = generic_typ
         self.args = tuple(args)
         self.kind = Kind.combine([self.generic_typ.kind]
-                                 + [a.kind for a in self.args])  # noqa: W503
+                                 + [a.kind for a in self.args])
 
     def __str__(self: 'GenericType[T]') -> str:
         return str(self.generic_typ)\
@@ -291,8 +291,9 @@ class TupleType(GenericType[T]):
                 args = [Type.from_ast(expr) for expr in index.value.elts]
                 if not args:
                     return TupleType([], empty=True)
-                if args[0] and len(args) == 2 and\
-                   isinstance(index.value.elts[1], ast3.Ellipsis):
+                # pylint: disable=no-member
+                if (args[0] and len(args) == 2
+                        and isinstance(index.value.elts[1], ast3.Ellipsis)):
                     return TupleType([], hom_type=args[0])
             else:
                 args = [Type.from_ast(index.value)]

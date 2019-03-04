@@ -22,7 +22,7 @@ def generalize_to_vocab(vocab: List[str], typ_str: str) -> str:
 def main(vocab_filename: Path, in_filename: Path, out_filename: Path):
     """TODO: learn_type_to_class docstring"""
     with in_filename.open(newline='') as infile,\
-         out_filename.open(mode='w') as outfile:  # noqa: E127
+            out_filename.open(mode='w') as outfile:
         vocab = vocab_filename.read_text().split('\n')
         reader = csv.reader(infile)
         writer = csv.writer(outfile)
@@ -55,9 +55,9 @@ if __name__ == '__main__':
     args = parser.parse_args()  # pylint: disable=invalid-name
 
     in_name = args.in_filename  # pylint: disable=invalid-name
-    out_name = args.out_filename  # pylint: disable=invalid-name
-    if not out_name:
-        out_name = in_name.parent.joinpath(in_name.stem + '-general')\
-                                 .with_suffix(in_name.suffix)
+    # pylint: disable=invalid-name
+    out_name = (args.out_filename
+                or (in_name.parent.joinpath(in_name.stem + '-general')
+                    .with_suffix(in_name.suffix)))
 
     main(args.vocab_filename, args.in_filename, out_name)

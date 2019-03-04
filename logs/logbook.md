@@ -24,6 +24,13 @@
   read tensorflow documentation on keras and keras source
   further convert modules into keras
 
+#### Monday 4 Mar
+* 16:00-16:45 0.75h
+  18:45-22:30 3.75h
+  further convert modules into keras and data pipeline into tensorflow
+
+
+
 
 ## Bibliography
 

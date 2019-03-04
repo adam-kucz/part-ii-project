@@ -1,10 +1,7 @@
 from typing import Mapping
 
-import tensorflow as tf
 from tensorflow.keras.layers import Dense, Softmax
 from tensorflow.keras.models import Sequential
-
-from ..abstract.modules import Parametrized
 
 __all__ = ['TypeclassOutput']
 
@@ -13,12 +10,14 @@ __all__ = ['TypeclassOutput']
 # optimizer=tf.train.AdamOptimizer()
 # loss=tf.keras.losses.CategoricalCrossentropy()
 # metrics=[tf.keras.metrics.CategoricalAccuracy()]
-class TypeclassOutput(Sequential, Parametrized):
+class TypeclassOutput(Sequential):
     _class_num: int
 
     def __init__(self, class_num: int):
+        super().__init__()
         self._class_num = class_num
-        self.add(Dense(self._class_num, activation=Softmax()))
+        self.add(Dense(self._class_num))
+        self.add(Softmax())
 
     @property
     def params(self) -> Mapping[str, int]:

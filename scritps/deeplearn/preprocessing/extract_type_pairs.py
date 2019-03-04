@@ -4,6 +4,7 @@
 from argparse import ArgumentParser, Namespace
 import csv
 from pathlib import Path
+# noqa justified because mypy needs IO in type comment
 from typing import List, IO  # noqa: F401
 import typing as t
 
@@ -23,8 +24,8 @@ def get_type_annotations(
     :returns: list of tuples (name, type) for variables and identifiers
     """
     ast: ast3.AST = ast3.parse(filestring)  # pylint: disable=no-member
-    collector: TypeCollector = TypeCollector() if not func_as_ret\
-                               else TypeCollectorFunAsRet()  # noqa: E127
+    collector: TypeCollector\
+        = TypeCollector() if not func_as_ret else TypeCollectorFunAsRet()
     collector.visit(ast)
     return collector.defs
 
@@ -49,8 +50,8 @@ if __name__ == "__main__":
     PARSER.add_argument('out', type=Path, nargs='?', default=Path('out.csv'),
                         help='output file')
     PARSER.add_argument('-f', action='store_true',
-                        help='assign return types to ' +  # noqa: W504
-                        'function identifiers instead of Callable[[...], ...]')
+                        help='assign return types to function identifiers'
+                        ' instead of Callable[[...], ...]')
     ARGS: Namespace = PARSER.parse_args()
 
     extract_type_annotations(ARGS.path, ARGS.out, ARGS.f)

@@ -1,11 +1,10 @@
-from itertools import chain
-from typing import Any, Callable, Mapping
+from typing import Any, Mapping
 
 import tensorflow as tf
-from tensorflow.keras.layers import Convolutional1D, Dense
+from tensorflow.keras.layers import Convolution1D, Dense, ReLU
 from tensorflow.keras.models import Sequential
 
-from ..abstract.modules import Parametrized
+from ..data_ops.data_transformers import StrEnc
 
 __all__ = ['charcnn', 'CharCNN']
 
@@ -15,22 +14,16 @@ def charcnn(one_hot_chars: tf.Tensor, params: Mapping[str, Any]) -> tf.Tensor:
     return CharCNN(params)((one_hot_chars,))
 
 
-class CharCNN(Sequential, Parametrized):
+class CharCNN(Sequential):
     def __init__(self, params: Mapping[str, Any]):
-        self._params = params
+        super().__init__()
+        self.add(StrEnc(params['identifier_length']))
         for conv_params in params['convolutional']:
-            self.add(Convolutional1D(filters=conv_params['filters'],
-                                     kernel_size=conv_params['kernel_size'],
-                                     padding='valid',
-                                     use_bias=False,
-                                     activation=tf.nn.relu))
+            self.add(Convolution1D(filters=conv_params['filters'],
+                                   kernel_size=conv_params['kernel_size'],
+                                   padding='valid',
+                                   use_bias=False))
+            self.add(ReLU())
         for dense_params in params['dense']:
-            self.add(Dense(units=dense_params['units'], activation=tf.nn.relu))
-
-    # def __call__(self, inputs: Tensors) -> tf.Tensor:
-    #     return super().__call__(inputs if isinstance(inputs, tf.Tensor)
-    #                             else inputs[0])
-
-    @property
-    def params(self):
-        return self._params
+            self.add(Dense(units=dense_params['units']))
+            self.add(ReLU())

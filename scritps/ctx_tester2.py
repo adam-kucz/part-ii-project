@@ -16,8 +16,8 @@ if __name__ == "__main__":
         help='size of context (number of elements on each side)')
     PARSER.add_argument(
         '-f', action='store_true',
-        help='assign return types to ' +  # noqa: W504
-        'function identifiers instead of Callable[[...], ...]')
+        help='assign return types to function identifiers'
+        ' instead of Callable[[...], ...]')
     ARGS: Namespace = PARSER.parse_args()
 
     extract_type_contexts(ARGS.path, ARGS.out, ARGS.ctx_size, ARGS.f)
