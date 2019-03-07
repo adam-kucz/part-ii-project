@@ -1,26 +1,27 @@
 from typing import Any, Mapping
 
 import tensorflow as tf
-from tensorflow.keras.layers import Convolution1D, Dense, Flatten, Input, ReLU
-from tensorflow.keras.models import Model
+from tensorflow.keras.layers import (
+    Convolution1D, Dense, Flatten, InputLayer, ReLU)
+from tensorflow.keras.models import Sequential
 
-from ..data_ops.data_transformers import StrEnc
+from ..data_ops.data_transformers import StringEncoder
 
 __all__ = ['CharCNN']
 
 
-class CharCNN(Model):
+class CharCNN(Sequential):
     def __init__(self, params: Mapping[str, Any]):
-        identifier = Input(shape=(), dtype=tf.string)
-        tensor = StrEnc(params['identifier_length'])(identifier)
+        super().__init__()
+        self.add(InputLayer(input_shape=(), dtype=tf.string))
+        self.add(StringEncoder(params['identifier_length']))
         for conv_params in params['convolutional']:
-            tensor = Convolution1D(filters=conv_params['filters'],
+            self.add(Convolution1D(filters=conv_params['filters'],
                                    kernel_size=conv_params['kernel_size'],
                                    padding='valid',
-                                   use_bias=False)(tensor)
-            tensor = ReLU()(tensor)
-        tensor = Flatten()(tensor)
+                                   use_bias=False))
+            self.add(ReLU())
+        self.add(Flatten())
         for dense_params in params['dense']:
-            tensor = Dense(units=dense_params['units'])(tensor)
-            tensor = ReLU()(tensor)
-        super().__init__(identifier, tensor)
+            self.add(Dense(units=dense_params['units']))
+            self.add(ReLU())

@@ -1,10 +1,9 @@
-# pylint: disable=missing-docstring
 import argparse
 import csv
 from pathlib import Path
 from typing import List, Optional
 
-from type_representation import Type
+from .type_representation import Type
 
 
 def generalize_to_vocab(vocab: List[str], typ_str: str) -> str:

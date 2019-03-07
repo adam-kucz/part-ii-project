@@ -1,16 +1,17 @@
-#!/usr/bin/env python3
 """NodeCollector to extract identifier-type pairs from python files"""
 import ast
-from typing import List, Union
 
+# typed_ast module is generated in a weird, pylint-incompatible, way
 # pylint: disable=no-name-in-module
 import typed_ast.ast3 as t_ast3
+
+from .ast_util import ASTPos
 
 __all__ = ['ContextAwareNodeVisitor', 'ContextAwareNodeTransformer']
 
 
 class ContextAwareNodeVisitor(t_ast3.NodeVisitor):
-    current_pos: List[Union[str, int]]
+    current_pos: ASTPos
 
     def __init__(self):
         self.current_pos = []

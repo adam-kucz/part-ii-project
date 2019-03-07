@@ -1,17 +1,17 @@
-#!/usr/bin/env python3
 """NodeCollector to extract identifier-type pairs from python files"""
 
 from typing import Iterable, List, Optional, Sequence, Union
 import typing as t
 
+# typed_ast module is generated in a weird, pylint-incompatible, way
 # pylint: disable=no-name-in-module
 from typed_ast.ast3 import (
     AnnAssign, arg, Assign, AST, AsyncFunctionDef, AsyncFor, AsyncWith,
     Attribute, FunctionDef, For, Name, NodeVisitor, Tuple, With)
 
-from type_representation import (
+from ..type_representation import (
     FunctionType, is_tuple, GenericType, Kind, Type, UNANNOTATED)
-from ..util import bind
+from ...util import bind
 
 
 def get_name(name: AST) -> Optional[str]:

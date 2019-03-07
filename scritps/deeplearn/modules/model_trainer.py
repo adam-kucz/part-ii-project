@@ -1,13 +1,12 @@
-from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
+import numpy as np
 from parse import parse
 import tensorflow as tf
 from tensorflow.keras import backend as K
 from tensorflow.keras.models import Model
-from tensorflow.keras.callbacks import (
-    EarlyStopping, ModelCheckpoint, TensorBoard)
+import tensorflow.keras.callbacks as cb
 
 from ..abstract import (DataMode, DataReader)
 from .input_output import get_out_dir
@@ -36,6 +35,62 @@ def _steps_per_epoch(dataset: tf.data.Dataset) -> int:
     return result
 
 
+class RestoreBest(cb.Callback):
+    monitor: str
+    best: float
+    verbose: int
+    best_epoch: int
+
+    def __init__(self, monitor='val_loss', verbose=0, mode='auto'):
+        super().__init__()
+        self.monitor = monitor
+
+        self.verbose = verbose
+        self.best_epoch = 0
+        self.best_weights = None
+
+        if mode not in ['auto', 'min', 'max']:
+            raise ValueError('RestoreBest mode {} is unknown'.format(mode))
+
+        if mode == 'min':
+            self.monitor_op = np.less
+        elif mode == 'max':
+            self.monitor_op = np.greater
+        else:
+            if 'acc' in self.monitor:
+                self.monitor_op = np.greater
+            else:
+                self.monitor_op = np.less
+
+    def on_epoch_end(self, epoch, logs=None):
+        current = self.get_monitor_value(logs)
+        if self.monitor_op(current, self.best):
+            self.best = current
+            self.best_epoch = epoch
+            self.best_weights = self.model.get_weights()
+
+    def on_train_begin(self, logs=None):  # pylint: disable=unused-argument
+        self.best_epoch = 0
+        # pylint: disable=comparison-with-callable
+        self.best = np.Inf if self.monitor_op == np.less else -np.Inf
+
+    def on_train_end(self, logs=None):  # pylint: disable=unused-argument
+        if self.best_epoch > 0:
+            self.model.set_weights(self.best_weights)
+            if self.verbose > 0:
+                print('Restoring best weights from epoch {}'
+                      .format(self.best_epoch))
+
+    def get_monitor_value(self, logs={}):
+        monitor_value = logs.get(self.monitor)
+        if monitor_value is None:
+            raise ValueError(('Early stopping conditioned on metric `{}` '
+                              'which is not available.'
+                              'Available metrics are: {}')
+                             .format(self.monitor, ','.join(logs)))
+        return monitor_value
+
+
 class ModelTrainer:
     name: str
     data_reader: DataReader
@@ -49,7 +104,7 @@ class ModelTrainer:
 
     def __init__(self, name: str, data_reader: DataReader, model: Model,
                  outdir: Path, run_name: str = 'default',
-                 append_format: str = ''):
+                 append_format: str = '', monitor: str = 'val_loss'):
         self.name = name
         self.data_reader = data_reader
         self._model = model
@@ -57,6 +112,7 @@ class ModelTrainer:
         self.outdir = get_out_dir(outdir, model.get_config())
         self.fileformat = self.name + '.{epoch:04d}' + append_format
         self.run_name = run_name
+        self.monitor = monitor
 
     def _ensure_initialized(self):
         sess = K.get_session()
@@ -65,7 +121,7 @@ class ModelTrainer:
         except tf.errors.FailedPreconditionError:
             pass
 
-    def train(self, trainpath, valpath, epochs=100, verbose=1):
+    def train(self, trainpath, valpath, epochs=100, patience=64, verbose=1):
         self._ensure_initialized()
         train_dataset = self.data_reader(trainpath, DataMode.TRAIN)
         val_dataset = self.data_reader(valpath, DataMode.VALIDATE)
@@ -73,12 +129,14 @@ class ModelTrainer:
             x=train_dataset,
             initial_epoch=self.epoch, epochs=self.epoch + epochs,
             callbacks=[
-                EarlyStopping(patience=32, restore_best_weights=True,
-                              verbose=verbose),
-                ModelCheckpoint(self._checkpointformat,
-                                save_weights_only=True, period=50,
-                                verbose=verbose),
-                TensorBoard(log_dir=self.outdir, write_images=True)],
+                cb.ModelCheckpoint(self._checkpointformat,
+                                   save_weights_only=True, period=50,
+                                   verbose=verbose),
+                cb.TensorBoard(log_dir=self.outdir, write_images=True),
+                cb.EarlyStopping(monitor=self.monitor, patience=patience,
+                                 restore_best_weights=True,
+                                 verbose=verbose),
+                RestoreBest(monitor=self.monitor, verbose=verbose)],
             verbose=verbose, shuffle=False, validation_data=val_dataset,
             steps_per_epoch=_steps_per_epoch(train_dataset),
             validation_steps=_steps_per_epoch(val_dataset))

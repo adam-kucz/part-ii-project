@@ -1,3 +1,4 @@
+"""NodeTransformer strip types from python ast at given positions"""
 import ast
 from typing import Callable, Optional, Union
 
@@ -5,7 +6,7 @@ from pytrie import Trie
 import typed_ast.ast3 as t_ast3
 
 from .ast_util import ASTPos
-from .context_aware_ast import ContextAwareNodeTransformer
+from .ctx_aware_ast import ContextAwareNodeTransformer
 
 __all__ = ['TypeStripper']
 
@@ -53,12 +54,13 @@ class TypeStripper(ContextAwareNodeTransformer):
             -> Optional[Union[ast.Assign, t_ast3.Assign]]:
         node = self.generic_visit(node)
         if node.value:
+            self.new_pos[self.current_pos + ['target']]\
+                = self.current_pos + ['targets', 0]
             if isinstance(node, ast.AnnAssign):
-                self.new_pos[self.current_pos + ['target']]\
-                    = self.current_pos + ['targets', 0]
                 return ast.Assign(targets=[node.target], value=node.value)
             if isinstance(node, t_ast3.AnnAssign):
-                self.new_pos[self.current_pos + ['target']]\
-                    = self.current_pos + ['targets', 0]
                 return t_ast3.Assign(targets=[node.target], value=node.value)
+            raise ValueError("AnnAssign node of unknown class: {}"
+                             .format(node))
+        self.new_pos[self.current_pos + ['target']] = None
         return None

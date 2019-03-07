@@ -52,8 +52,6 @@ def with_added_remaining(
     return result if not projects_normalised else None
 
 
-# TODO: fix
-# pylint: disable=too-many-locals
 def get_split(
         requested: Mapping[T, Tuple[float, float, float]],
         projects_iter: Iterable[Tuple[str, int]])\

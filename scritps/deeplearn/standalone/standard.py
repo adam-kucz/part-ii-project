@@ -1,4 +1,3 @@
-from functools import partial
 from pathlib import Path
 from typing import List, Tuple, Union
 
@@ -19,10 +18,10 @@ SomeLayers = Union[Layer, Tuple[Layer, ...], List[Layer]]
 class StandardStandalone(ModelTrainer):
     def __init__(self, name: str, dataset_producer: DataReader,
                  inputs: SomeLayers, outputs: SomeLayers,
-                 loss, metrics: List,
-                 out_dir: Path, run_name: str = 'default'):
+                 loss, metrics: List, out_dir: Path,
+                 run_name: str = 'default', monitor: str = 'val_loss'):
         super().__init__(name, dataset_producer, Model(inputs, outputs),
-                         out_dir, run_name)
+                         out_dir, run_name, monitor=monitor)
         self.model.compile(optimizer=tf.train.AdamOptimizer(),
                            loss=loss, metrics=metrics)
         self.model.summary()
@@ -38,4 +37,5 @@ class CategoricalStandalone(StandardStandalone):
         probabilities = ProbabilityOutput(class_num)(outputs)
         super().__init__(name, dataset_producer, inputs, probabilities,
                          tf.keras.losses.CategoricalCrossentropy(),
-                         metrics, out_dir, run_name)
+                         metrics, out_dir, run_name,
+                         monitor='val_sparse_categorical_accuracy')

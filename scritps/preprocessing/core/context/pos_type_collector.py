@@ -1,4 +1,6 @@
+"""NodeVisitor to extract astposition-type pairs from python files"""
 from typing import Iterable, List, Optional, Sequence, Union
+# typed_ast module is generated in a weird, pylint-incompatible, way
 # pylint: disable=no-name-in-module
 from typed_ast.ast3 import (
     AnnAssign, arg, Assign, AST, AsyncFunctionDef, AsyncFor, AsyncWith,
@@ -6,10 +8,10 @@ from typed_ast.ast3 import (
 
 from pytrie import Trie
 
-from .context_aware_ast import ContextAwareNodeVisitor
-from .type_representation import (
+from .ctx_aware_ast import ContextAwareNodeVisitor
+from ..type_representation import (
     FunctionType, GenericType, is_tuple, Kind, Type, UNANNOTATED)
-from ..util import bind
+from ...util import bind
 
 __all__ = ['PosTypeCollector', 'PosTypeCollectorFunAsRet']
 

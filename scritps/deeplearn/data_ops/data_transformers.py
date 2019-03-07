@@ -6,7 +6,8 @@ from tensorflow.keras.layers import Input, Lambda
 from tensorflow.keras.models import Model
 from tensorflow.contrib.lookup import index_table_from_tensor, LookupInterface
 
-__all__ = ['CategoricalIndex', 'CategoricalOneHot', 'CharLevel', 'StrEnc']
+__all__ = ['CategoricalIndex', 'CategoricalOneHot',
+           'CharLevel', 'StringEncoder']
 
 
 class CategoricalIndex(Lambda):
@@ -60,11 +61,12 @@ class CharLevel(Lambda):
         return input_shape + (self.num_chars,)
 
 
-class StrEnc(Model):
+class StringEncoder(Model):
     def __init__(self, str_length: int):
         self.str_length = str_length
+        # '\n' might be useful because it is preserved as a token by parso
         self.alphabet = string.ascii_lowercase + string.ascii_uppercase +\
-                        string.digits + string.punctuation  # noqa: E127
+                        string.digits + string.punctuation + '\n'  # noqa: E127
         strs = Input(shape=(), dtype=tf.string)
         chars = CharLevel(str_length)(strs)
         char_one_hot = CategoricalOneHot(self.alphabet)(chars)

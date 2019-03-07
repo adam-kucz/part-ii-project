@@ -1,7 +1,4 @@
-#!/usr/bin/env python3
-"""Module for parsing python files"""
-
-from argparse import ArgumentParser, Namespace
+"""Module for extracting identifier-type pairs from python files"""
 import csv
 from pathlib import Path
 # noqa justified because mypy needs IO in type comment
@@ -10,8 +7,8 @@ import typing as t
 
 import typed_ast.ast3 as ast3
 
-from type_representation import Type
-from type_collector import TypeCollector, TypeCollectorFunAsRet
+from ..type_representation import Type
+from .type_collector import TypeCollector, TypeCollectorFunAsRet
 
 
 def get_type_annotations(
@@ -41,17 +38,3 @@ def extract_type_annotations(in_filename: Path,
             out_filename.parent.mkdir(parents=True)
         with out_filename.open('w', newline='') as outfile:  # type: IO
             csv.writer(outfile).writerows(types)
-
-
-if __name__ == "__main__":
-    PARSER: ArgumentParser = ArgumentParser(
-        description='Extract (name,type) pairs from python source file')
-    PARSER.add_argument('path', type=Path, help='source file')
-    PARSER.add_argument('out', type=Path, nargs='?', default=Path('out.csv'),
-                        help='output file')
-    PARSER.add_argument('-f', action='store_true',
-                        help='assign return types to function identifiers'
-                        ' instead of Callable[[...], ...]')
-    ARGS: Namespace = PARSER.parse_args()
-
-    extract_type_annotations(ARGS.path, ARGS.out, ARGS.f)

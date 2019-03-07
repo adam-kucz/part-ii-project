@@ -45,6 +45,10 @@
 #### Thursday 7 Mar
 * 11:00-12:00 1.00h
   debug keras implementation of the networks
+* 13:00-14:00 1.00h
+  reorganise preprocessing directory
+* 15:00-18:15 3.25h
+  start fixing data extraction and adding unit tests
 
 ## Bibliography
 

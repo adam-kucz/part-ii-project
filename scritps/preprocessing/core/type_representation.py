@@ -1,18 +1,17 @@
 """Defines type representation"""
 from abc import ABCMeta, abstractmethod
 from enum import auto, Enum, unique
-# pylint: disable=W0611
-from typing import (Any, cast, Generic, Iterable,
-                    Optional, Sequence, Union)
+from typing import Any, cast, Generic, Iterable, Optional, Sequence, Union
 import typing as t
-# pylint: disable=E0611
+# typed_ast module is generated in a weird, pylint-incompatible, way
+# pylint: disable=no-name-in-module
 from typed_ast.ast3 import (AST, Attribute, Expression, expr_context,
                             Index, List,
                             Name, NameConstant, Str, Subscript, Tuple)
 import typed_ast.ast3 as ast3
 
-T = t.TypeVar('T')  # pylint: disable=C0103
-S = t.TypeVar('S')  # pylint: disable=C0103
+T = t.TypeVar('T')  # pylint: disable=invalid-name
+S = t.TypeVar('S')  # pylint: disable=invalid-name
 
 
 @unique
