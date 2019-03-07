@@ -8,8 +8,6 @@ import tensorflow as tf
 __all__ = ['DataMode', 'DataReader']
 
 
-# TODO: rename and move to data folder
-@unique
 class DataMode(Flag):
     """
     Mode for reading a dataset
@@ -27,9 +25,12 @@ class DataMode(Flag):
     BATCH = auto()
     SHUFFLE = auto()
     ONEPASS = auto()
-    TRAIN = INPUTS | LABELS | BATCH | SHUFFLE
-    TEST = INPUTS | LABELS | BATCH
-    PREDICT = INPUTS | BATCH | ONEPASS
+    BASIC = INPUTS | LABELS | BATCH
+    TRAIN = BASIC | SHUFFLE
+    VALIDATE = BASIC
+    TEST = BASIC | ONEPASS
+    # pylint doesn't seem to know that flags can be negated
+    PREDICT = TEST & ~LABELS  # pylint: disable=invalid-unary-operand-type
 
 
 class DataReader(ABC):

@@ -29,8 +29,22 @@
   18:45-22:30 3.75h
   further convert modules into keras and data pipeline into tensorflow
 
+#### Tueday 5 Mar
+* 15:00-17:00 2.00h
+  18:00-18:30 0.50h
+  debug keras Lambda modules
+* 22:00-24:00 2.00h
+  learn to like keras functional API
 
+#### Wednesday 6 Mar
+* 09:30-10:00 0.50h
+  12:00-14:00 2.00h
+  15:00-16:00 1.00h
+  debug keras implementation of the networks
 
+#### Thursday 7 Mar
+* 11:00-12:00 1.00h
+  debug keras implementation of the networks
 
 ## Bibliography
 
