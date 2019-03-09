@@ -1,7 +1,8 @@
 """Defines type representation"""
 from abc import ABCMeta, abstractmethod
 from enum import auto, Enum, unique
-from typing import Any, cast, Generic, Iterable, Optional, Sequence, Union
+from typing import (Any, cast, Generic, Iterable,
+                    Mapping, Optional, Sequence, Union)
 import typing as t
 # typed_ast module is generated in a weird, pylint-incompatible, way
 # pylint: disable=no-name-in-module
@@ -148,7 +149,8 @@ class SimpleType(Type[T]):
     @staticmethod
     def from_ast(ast: AST) -> Optional['SimpleType']:
         """Tries to interpret AST as representing a simple type"""
-        return SimpleType(ast.id) if isinstance(ast, Name) else None
+        return SimpleType(TYPE_SYNONYMS.get(ast.id, ast.id))\
+            if isinstance(ast, Name) else None
 
 
 class GenericType(Type[T]):
@@ -392,3 +394,6 @@ NONE_TYPE: Type[None] = SimpleType('None')
 ANY_TYPE: Type[Any] = SimpleType('Any')
 UNANNOTATED: Type[Any] = SimpleType('_', Kind.EMPTY)
 UNKNOWN: Type[Any] = SimpleType('*', Kind.EMPTY)
+
+TYPE_SYNONYMS: Mapping[str, str]\
+    = {'list': 'List', 'tuple': 'Tuple', 'dict': 'Dict'}

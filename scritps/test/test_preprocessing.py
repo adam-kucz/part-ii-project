@@ -1,4 +1,6 @@
 import csv
+from pathlib import Path
+from typing import List
 import unittest
 
 import typed_ast.ast3 as ast3
@@ -8,7 +10,8 @@ from preprocessing.core.context.type_collectors import AnonymisingTypeCollector
 from preprocessing.core.type_representation import (
     ANY_TYPE, GenericType, NestedType, NONE_TYPE, SimpleType, UnionType)
 from preprocessing.core.pairs.extract import extract_type_identifiers
-from .util import RAW, TestWithOutDir, OUT
+import preprocessing.sets.data_splits as splits
+from .util import DATADIR, PROJDIR, RAW, TestWithOutDir, OUT
 
 TEST_CASES = {
     'jedi': {'path': RAW.joinpath("jedi",
@@ -162,3 +165,25 @@ class TestContextExtraction(TestWithOutDir):
                                                 actual, expected):
                             with self.subTest(line=line, i=i):
                                 self.assertEqual(line, exp)
+
+
+DATASETS = {"identifiers": {"train": 43952, "validate": 30488, "test": 10222},
+            "identifiers_fun_as_ret": {"train": 43679, "validate": 30189,
+                                       "test": 9745},
+            "contexts_3_fun_as_ret": {"train": 43649, "validate": 29557,
+                                      "test": 9662}}
+
+
+class TestSplitData(TestWithOutDir):
+
+    def test_from_splitfile(self):
+        for datasetname, splitdata in DATASETS.items():
+            splits.from_logfile(DATADIR.joinpath("raw", datasetname), OUT,
+                                PROJDIR.joinpath("logs", "data-split.txt"))
+            for splitname, length in splitdata.items():
+                dataset_path: Path = OUT.joinpath(splitname)\
+                                        .with_suffix(".csv")
+                with dataset_path.open(newline='') as outfile:
+                    lines: List[str] = tuple(csv.reader(outfile))
+                    with self.subTest(dataset=datasetname, division=splitname):
+                        self.assertEqual(len(lines), length)

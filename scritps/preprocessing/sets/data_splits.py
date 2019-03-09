@@ -1,7 +1,3 @@
-#!/usr/bin/env python3
-"""Module for splitting data into subsets"""
-
-from argparse import ArgumentParser, Namespace
 from ast import literal_eval
 from itertools import dropwhile
 from os import walk
@@ -12,6 +8,9 @@ import random
 from typing import (Any, Dict, IO, Iterable, List, Mapping,  # noqa: F401
                     Optional, Sequence, Tuple, TypeVar)
 
+from parse import parse
+
+__all__ = ["from_logfile", "create_new"]
 
 T = TypeVar('T')  # pylint: disable=invalid-name
 
@@ -117,11 +116,12 @@ def read_splits(filename: Path) -> Dict[str, Tuple[float, float, float]]:
 def write_project(outfile: IO, proj_dir: Path) -> None:
     for filepath in proj_dir.rglob("*.csv"):
         if filepath.is_file():
-            with filepath.open() as csvfile:  # type: IO
-                outfile.writelines(csvfile.readlines())
+            outfile.write(filepath.read_text())
 
 
 def write_split(outfilename: Path, projdir: Path, projects: List[str]) -> None:
+    print("Trying to write split {} to file {}"
+          .format(projects, outfilename))
     if not outfilename.parent.exists():
         outfilename.parent.mkdir(parents=True)
     with outfilename.open('w', newline='') as outfile:  # type: IO
@@ -129,51 +129,32 @@ def write_split(outfilename: Path, projdir: Path, projects: List[str]) -> None:
             write_project(outfile, projdir.joinpath(project))
 
 
-def load_from_log(datadir: Path, logfile: IO):
-    for split_line in logfile:
-        split: str = split_line.split()[0]
-        projs: List[str] = literal_eval(split_line.split(': ')[1])
-        out_filename: Path = outdir.joinpath(split).with_suffix('.csv')
-        write_split(out_filename, datadir, projs)
-
-
-def create_new_split(splitpath: Path, datadir: Path, logfile: IO):
-    splits: Optional[Mapping[str, Tuple[float, List[str]]]]\
-        = get_split(read_splits(splitpath), get_projects(ARGS.datadir))
-    if splits:
-        for split, (fraction, project_list) in splits.items():\
-                # type: str, Tuple[float, List[str]]
-            print("{} ({}%): {}"
-                  .format(split, fraction * 100, project_list),
-                  file=logfile)
-            out_filename: Path = outdir.joinpath(split)\
+def from_logfile(datadir: Path, outdir: Path, logpath: Path):
+    for line in logpath.read_text().split('\n'):
+        if line:
+            lineformat: str = "{split} ({}%): {projs}"
+            parsed = parse(lineformat, line)
+            if not parsed:
+                raise ValueError("Line {} does not conform to format {}"
+                                 .format(line, lineformat))
+            out_filename: Path = outdir.joinpath(parsed['split'])\
                                        .with_suffix('.csv')
-            write_split(out_filename, datadir, project_list)
-            print("{}: {}".format(split, fraction))
+            write_split(out_filename, datadir, literal_eval(parsed['projs']))
 
 
-if __name__ == "__main__":
-    PARSER: ArgumentParser = ArgumentParser(
-        description='Split projects into groups')
-    PARSER.add_argument('datadir', type=Path,
-                        help='directory with projects')
-    PARSER.add_argument('splits', type=Path,
-                        help='file specifying group sizes as'
-                        + '(name, min_fraction, max_fraction)')
-    PARSER.add_argument('outdir', nargs='?', type=Path,
-                        help='directory to save output files in')
-    PARSER.add_argument('--log_file', default=Path('log.txt'), type=Path,
-                        help='file to save splits in')
-    PARSER.add_argument('-r', action='store_true',
-                        help='read splits from log file')
-    ARGS: Namespace = PARSER.parse_args()
-
-    # pylint: disable=invalid-name
-    outdir = ARGS.outdir if ARGS.outdir else ARGS.datadir
-
-    if ARGS.r:
-        with ARGS.log_file.open() as log:
-            load_from_log(ARGS.datadir, log)
-    else:
-        with ARGS.log_file.open('w') as log:
-            create_new_split(ARGS.splits, ARGS.datadir, log)
+def create_new(splitpath: Path, datadir: Path,
+               outdir: Path, logpath: Path)\
+               -> Optional[Dict[str, Tuple[float, List[str]]]]:
+    logfile: IO = logpath.open('w')
+    splits: Optional[Mapping[str, Tuple[float, List[str]]]]\
+        = get_split(read_splits(splitpath), get_projects(datadir))
+    if not splits:
+        return None
+    results = {}
+    for split, (fraction, project_list) in splits.items():\
+            # type: str, Tuple[float, List[str]]
+        out_filename: Path = outdir.joinpath(split).with_suffix('.csv')
+        write_split(out_filename, datadir, project_list)
+        results[split] = (fraction * 100, project_list)
+        print("{} ({}%): {}".format(split, *results[split]), file=logfile)
+    return results

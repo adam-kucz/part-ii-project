@@ -25,8 +25,7 @@ class CsvReader(DataReader):
             shape += self.input_shape
         if mode & DataMode.LABELS:
             shape += self.label_shape
-        dataset = tf.data.experimental.CsvDataset(str(path), shape,
-                                                  header=True)
+        dataset = tf.data.experimental.CsvDataset(str(path), shape)
         if mode & DataMode.LABELS:
             if mode & DataMode.INPUTS:
                 dataset\

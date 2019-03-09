@@ -2,9 +2,11 @@ from pathlib import Path
 import shutil
 import unittest
 
-__all__ = ['TESTDIR', 'RAW', 'OUT', 'TestWithOutDir']
+__all__ = ['PROJDIR', 'DATADIR', 'TESTDIR', 'RAW', 'OUT', 'TestWithOutDir']
 
-TESTDIR = Path("/home/acalc79/synced/part-ii-project/scritps/test")
+PROJDIR = Path("/home/acalc79/synced/part-ii-project")
+DATADIR = PROJDIR.joinpath("data")
+TESTDIR = PROJDIR.joinpath("scritps", "test")
 RAW = TESTDIR.joinpath("data", "raw")
 OUT = TESTDIR.joinpath("tmp")
 
