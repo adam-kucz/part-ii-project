@@ -10,8 +10,10 @@ import typed_ast.ast3 as ast3
 from ..type_representation import Type
 from .type_collector import TypeCollector, TypeCollectorFunAsRet
 
+__all__ = ['get_type_identfiers', 'extract_type_identifiers']
 
-def get_type_annotations(
+
+def get_type_identfiers(
         filestring: str,
         func_as_ret: bool = False) -> List[t.Tuple[str, Type]]:
     """
@@ -27,14 +29,13 @@ def get_type_annotations(
     return collector.defs
 
 
-def extract_type_annotations(in_filename: Path,
+def extract_type_identifiers(in_filename: Path,
                              out_filename: Path,
                              fun_as_ret: bool = False) -> None:
     """Extract type annotations from input file to output file"""
     types: List[t.Tuple[str, Type]]\
-        = get_type_annotations(in_filename.read_text(), fun_as_ret)
-    if types:
-        if not out_filename.parent.exists():
-            out_filename.parent.mkdir(parents=True)
-        with out_filename.open('w', newline='') as outfile:  # type: IO
-            csv.writer(outfile).writerows(types)
+        = get_type_identfiers(in_filename.read_text(), fun_as_ret)
+    if not out_filename.parent.exists():
+        out_filename.parent.mkdir(parents=True)
+    with out_filename.open('w', newline='') as outfile:  # type: IO
+        csv.writer(outfile).writerows(types)

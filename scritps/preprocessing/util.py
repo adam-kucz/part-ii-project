@@ -1,6 +1,7 @@
 """Collection of useful methods that do not belong anywhere else"""
+from collections import defaultdict
 from pathlib import Path
-from typing import Callable, List, Optional, Tuple, TypeVar
+from typing import Callable, Dict, List, Optional, Tuple, TypeVar
 
 __all__ = ['bind', 'extract_dir']
 
@@ -19,13 +20,13 @@ def bind(a: Optional[A], f: Callable[[A], Optional[B]]) -> Optional[B]:
 def extract_dir(repo_dir: Path,
                 out_dir: Path,
                 extraction_function: Callable[[Path, Path], None])\
-                -> List[Tuple[str, Exception]]:
+                -> Dict[type, List[Tuple[Path, Exception]]]:
     """
     Extracts annotaions from all files in the directory
 
     Stores the files in per-repo subdirectories of out_dir
     """
-    exceptions: List[Path, Exception] = []
+    exceptions: Dict[type, List[Path, Exception]] = defaultdict(list)
     for pypath in filter(lambda p: p.is_file(), repo_dir.rglob('*.py')):\
             # type: Path
         rel: Path = pypath.relative_to(repo_dir)
@@ -35,6 +36,7 @@ def extract_dir(repo_dir: Path,
         try:
             extraction_function(pypath, outpath)
             # extract_type_annotations(pypath, outpath, fun_as_ret)
-        except (SyntaxError, UnicodeDecodeError) as exception:
-            exceptions.append((pypath, exception))
+        # we want to catch and report *all* exceptions
+        except Exception as exception:  # pylint: disable=broad-except
+            exceptions[type(exception)].append((pypath, exception))
     return exceptions

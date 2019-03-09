@@ -2,30 +2,35 @@
 from argparse import ArgumentParser, Namespace
 from functools import partial
 from pathlib import Path
+from typing import Any, Dict, Optional
 
-from preprocessing.core.context.extract_type_and_context import (
-    extract_type_contexts)
-from preprocessing.core.pairs.extract_type_pairs import (
-    extract_type_annotations)
+from preprocessing.core.context.extract import extract_type_contexts
+from preprocessing.core.pairs.extract import extract_type_identifiers
 from preprocessing.util import extract_dir
 
+MODES = {'identifier': (extract_type_identifiers,
+                        {'f': 'fun_as_ret'}),
+         'context': (extract_type_contexts,
+                     {'ctx_size': 'context_size', 'f': 'fun_as_ret'})}
 
-def main(inpath: Path, outpath: Path, mode: str, kwarg_dict):
-    if mode == 'identifier':
-        function = extract_type_annotations
-        arglist = {'f': 'fun_as_ret'}
-    elif ARGS.mode == 'context':
-        function = extract_type_contexts
-        arglist = {'ctx_size': 'context_size', 'f': 'fun_as_ret'}
-    else:
-        raise ValueError("Unrecognised mode: {}".format(mode))
+
+def main(inpath: Path, outpath: Path, mode: str,
+         kwarg_dict: Dict[str, Any], logdir: Optional[Path] = None):
+    function, arglist = MODES[mode]
     kwargs = dict((arglist[k], kwarg_dict[k]) for k in arglist)
 
     exceptions = extract_dir(inpath, outpath, partial(function, **kwargs))
-    if exceptions:
-        print("Exceptions:")
-        for path, exception in exceptions:
-            print("Exception {}\nSource: {}".format(exception, path))
+    if logdir and not logdir.exists():
+        logdir.mkdir(parents=True)
+    for exception_type in exceptions:
+        if logdir:
+            with logdir.joinpath(str(exception_type)).open('w') as fileout:
+                for path, exception in exceptions[exception_type]:
+                    fileout.write("{}, {}".format(exception, path))
+        else:
+            print("Exceptions {}:".format(exception_type))
+            for path, exception in exceptions[exception_type]:
+                print("Exception {}\nSource: {}".format(exception, path))
 
 
 if __name__ == "__main__":

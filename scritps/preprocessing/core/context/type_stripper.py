@@ -12,7 +12,7 @@ __all__ = ['TypeStripper']
 
 
 class TypeStripper(ContextAwareNodeTransformer):
-    new_pos: Trie  # Mapping[ASTPos, ASTPos]
+    new_pos: Trie  # Mapping[ASTPos, Optional[ASTPos]]
 
     def __init__(self, locations: Callable[[ASTPos], bool]):
         super().__init__()
@@ -55,7 +55,7 @@ class TypeStripper(ContextAwareNodeTransformer):
         node = self.generic_visit(node)
         if node.value:
             self.new_pos[self.current_pos + ['target']]\
-                = self.current_pos + ['targets', 0]
+                = self.current_new_pos + ['targets', 0]
             if isinstance(node, ast.AnnAssign):
                 return ast.Assign(targets=[node.target], value=node.value)
             if isinstance(node, t_ast3.AnnAssign):

@@ -5,7 +5,7 @@ import ast
 # pylint: disable=no-name-in-module
 import typed_ast.ast3 as t_ast3
 
-from .ast_util import ASTPos
+from ..ast_util import ASTPos
 
 __all__ = ['ContextAwareNodeVisitor', 'ContextAwareNodeTransformer']
 
@@ -14,6 +14,7 @@ class ContextAwareNodeVisitor(t_ast3.NodeVisitor):
     current_pos: ASTPos
 
     def __init__(self):
+        super().__init__()
         self.current_pos = []
 
     def generic_visit(self, node):
@@ -34,17 +35,26 @@ class ContextAwareNodeVisitor(t_ast3.NodeVisitor):
 
 class ContextAwareNodeTransformer(t_ast3.NodeTransformer,
                                   ContextAwareNodeVisitor):
+    current_new_pos: ASTPos
+
+    def __init__(self):
+        ContextAwareNodeVisitor.__init__(self)
+        self.current_new_pos = []
+
     def generic_visit(self, node):
         for field, old_value in t_ast3.iter_fields(node):
             self.current_pos.append(field)
+            self.current_new_pos.append(field)
             if isinstance(old_value, list):
                 new_values = []
                 for i, value in enumerate(old_value):
                     # pylint: disable=no-member
                     if isinstance(value, (t_ast3.AST, ast.AST)):
                         self.current_pos.append(i)
+                        self.current_new_pos.append(len(new_values))
                         value = self.visit(value)
                         self.current_pos.pop()
+                        self.current_new_pos.pop()
                         if value is None:
                             continue
                         elif not isinstance(value, (t_ast3.AST, ast.AST)):
@@ -60,4 +70,5 @@ class ContextAwareNodeTransformer(t_ast3.NodeTransformer,
                 else:
                     setattr(node, field, new_node)
             self.current_pos.pop()
+            self.current_new_pos.pop()
         return node

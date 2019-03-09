@@ -8,10 +8,9 @@ import astor
 import parso
 import typed_ast.ast3 as ast3
 
-from .ast_util import get_node, ASTPos
-from .pos_type_collector import PosTypeCollector, PosTypeCollectorFunAsRet
+from ..ast_util import ASTPos, get_node, to_different_ast
+from .type_collectors import AnonymisingTypeCollector
 from ..type_representation import Type
-from .type_stripper import TypeStripper
 
 __all__ = ["extract_type_contexts"]
 
@@ -22,13 +21,10 @@ def get_context(tree: ast3.AST, tokens: parso.python.tree.Module,
                 ctx_size: int, pos: ASTPos) -> Optional[List[str]]:
     try:
         node = get_node(tree, pos)
-    except AttributeError as err:
-        # TODO: probably should be dealt with in stripper
-        # this happens because stripped pure annotation disappears compeletely
-        if pos[-2:] == ['targets', 0]:
-            return None
-        print("Raising anyway, position: {}".format(pos))
-        raise AttributeError(err)
+    except IndexError as err:
+        print("IndexError when querying {}"  # from tree\n{}"
+              .format(pos, ast3.dump(tree)))
+        raise err
     loc = (node.lineno, node.col_offset) if node else None
     token = tokens.get_leaf_for_position(loc)
     while token.type != 'name':
@@ -59,20 +55,22 @@ def get_type_contexts(
     """
     # pylint: disable=no-member
     ast: ast3.AST = ast3.parse(filepath.read_text())
-    collector: PosTypeCollector\
-        = PosTypeCollector() if not func_as_ret else PosTypeCollectorFunAsRet()
+    collector: AnonymisingTypeCollector = AnonymisingTypeCollector(func_as_ret)
     collector.visit(ast)
-    stripped_tree = astor.parse_file(filepath)
-    # pylint: disable=protected-access
-    stripper = TypeStripper(collector.type_locs._find)
-    stripper.visit(stripped_tree)
-    stripped_source = astor.to_source(stripped_tree)
+    untyped = to_different_ast(ast)
+    stripped_source = astor.to_source(untyped)
     renormalised_tree = ast3.parse(stripped_source)
     tokens = parso.parse(stripped_source)
-    return list(filter(None,
-                       ((get_context(renormalised_tree, tokens, ctx_size,
-                                     stripper.new_pos.get(pos, pos)), typ)
-                        for pos, typ in collector.type_locs.items())))
+    try:
+        types_still_present\
+            = ((new_pos, typ) for old_pos, typ, new_pos in collector.type_locs
+               if new_pos)
+        return list((get_context(renormalised_tree, tokens, ctx_size, new_pos),
+                     typ)
+                    for new_pos, typ in types_still_present)
+    except IndexError as err:
+        print("Error {} in file {}".format(err, filepath))
+        raise err
 
 
 def extract_type_contexts(in_filename: Path,
@@ -82,9 +80,8 @@ def extract_type_contexts(in_filename: Path,
     """Extract type annotations from input file to output file"""
     types: List[Tuple[Iterable[str], Type]]\
         = get_type_contexts(in_filename, context_size, fun_as_ret)
-    if types:
-        if not out_filename.parent.exists():
-            out_filename.parent.mkdir(parents=True)
-        with out_filename.open('w', newline='') as outfile:  # type: IO
-            csv.writer(outfile).writerows(tuple(ctx) + (str(typ),)
-                                          for ctx, typ in types)
+    if not out_filename.parent.exists():
+        out_filename.parent.mkdir(parents=True)
+    with out_filename.open('w', newline='') as outfile:  # type: IO
+        csv.writer(outfile).writerows(tuple(ctx) + (str(typ),)
+                                      for ctx, typ in types)

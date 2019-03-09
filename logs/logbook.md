@@ -50,6 +50,19 @@
 * 15:00-18:15 3.25h
   start fixing data extraction and adding unit tests
 
+#### Friday 8 Mar
+* 13:00-14:00 1.00h
+  15:00-16:45 1.75h
+  debug context extraction, refine unit tests
+  
+#### Saturday 9 Mar
+* 13:30-
+  fix astor for large integers, 
+  think of parso-based type annotation stripping approaches,
+  finish basic tests for identifier and context data preprocessing
+  start reading up on hpc clusters
+
+
 ## Bibliography
 
 [1] Writing for Computer Science, ISBN 978-1-4471-6638-2, ISBN 978-1-4471-6639-9  (eBook), DOI 10.1007/978-1-4471-6639-9
