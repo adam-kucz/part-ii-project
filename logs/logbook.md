@@ -70,18 +70,21 @@
 #### Tuesday 12 Mar
 * 11:00-12:00 1.00h
   15:00-17:00 2.00h
-  start implementic semantic grouping
+  start implementing semantic grouping
 
 #### Wednesday 13 Mar
 * 12:30-14:45 2.25h
-  learning about hpc, preparing to train
+  learn about hpc, prepare to train
 
 #### Thursday 14 Mar
 * 09:30-10:00 0.50h
-  experimenting with hpc
+  experiment with hpc
   
 #### Friday 15 Mar
-* 10:30-
+* 10:30-13:00 2.50h
+  clean up output directory structure
+* 13:45-
+  add dropout
 
 ## Bibliography
 

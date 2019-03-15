@@ -95,18 +95,21 @@ class ModelTrainer:
     data_reader: DataReader
     outpath: Path
     _model: Model
+    _core: Model
     _epoch: int
     fileformat: str
     _run_name: str
     _checkpointpath: Path
     _checkpointformat: Path
 
-    def __init__(self, name: str, data_reader: DataReader, model: Model,
+    def __init__(self, name: str,
+                 data_reader: DataReader, model: Model, core: Model,
                  outpath: Path, run_name: str = 'default',
                  append_format: str = '', monitor: str = 'val_loss'):
         self.name = name
         self.data_reader = data_reader
         self._model = model
+        self._core = core
         self._epoch = 0
         self.outpath = outpath
         self.fileformat = self.name + '.{epoch:04d}' + append_format
@@ -124,6 +127,7 @@ class ModelTrainer:
         self._ensure_initialized()
         train_dataset = self.data_reader(trainpath, DataMode.TRAIN)
         val_dataset = self.data_reader(valpath, DataMode.VALIDATE)
+        log_dir = str(self.outpath.joinpath(self.run_name, "tensorboard"))
         result = self.model.fit(
             x=train_dataset,
             initial_epoch=self.epoch, epochs=self.epoch + epochs,
@@ -131,7 +135,7 @@ class ModelTrainer:
                 cb.ModelCheckpoint(self._checkpointformat,
                                    save_weights_only=True, period=50,
                                    verbose=verbose),
-                cb.TensorBoard(log_dir=str(self.outpath), write_images=True),
+                cb.TensorBoard(log_dir=log_dir, write_images=True),
                 cb.EarlyStopping(monitor=self.monitor, patience=patience,
                                  restore_best_weights=True,
                                  verbose=verbose),
@@ -194,3 +198,6 @@ class ModelTrainer:
 
     def save_weights(self, filename):
         self.model.save_weights(str(self._checkpointpath.joinpath(filename)))
+
+    def save_core_weights(self, filename):
+        self._core.save_weights(str(self._checkpointpath.joinpath(filename)))

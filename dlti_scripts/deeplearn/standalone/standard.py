@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import List, Union
 
 import tensorflow as tf
 import tensorflow.keras.metrics as metr
@@ -12,30 +12,32 @@ from ..modules.probability_output import ProbabilityOutput
 
 __all__ = ['StandardStandalone', 'CategoricalStandalone']
 
-SomeLayers = Union[Layer, Tuple[Layer, ...], List[Layer]]
+SomeLayers = Union[Layer, List[Layer]]
 
 
 class StandardStandalone(ModelTrainer):
     def __init__(self, name: str, dataset_producer: DataReader,
-                 inputs: SomeLayers, outputs: SomeLayers,
+                 inputs: SomeLayers, outputs: SomeLayers, core: Model,
                  loss, metrics: List, out_dir: Path,
-                 run_name: str = 'default', monitor: str = 'val_loss'):
-        super().__init__(name, dataset_producer, Model(inputs, outputs),
+                 run_name: str = 'default', monitor: str = 'val_loss',
+                 optimizer=tf.keras.optimizers.Adam()):
+        super().__init__(name, dataset_producer, Model(inputs, outputs), core,
                          out_dir, run_name, monitor=monitor)
-        self.model.compile(optimizer=tf.train.AdamOptimizer(),
-                           loss=loss, metrics=metrics)
+        self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
         self.model.summary()
 
 
 class CategoricalStandalone(StandardStandalone):
-    def __init__(self, name: str, dataset_producer: DataReader,
-                 class_num: int, inputs: SomeLayers, outputs: SomeLayers,
-                 out_dir: Path, run_name: str = 'default', metrics: List = []):
+    def __init__(self, name: str, dataset_producer: DataReader, class_num: int,
+                 inputs: SomeLayers, outputs: SomeLayers, core: Model,
+                 out_dir: Path, run_name: str = 'default', metrics: List = [],
+                 optimizer=tf.keras.optimizers.Adam()):
         topk = metr.sparse_top_k_categorical_accuracy
         metrics = metrics + [metr.SparseCategoricalAccuracy(),
                              topk]
         probabilities = ProbabilityOutput(class_num)(outputs)
-        super().__init__(name, dataset_producer, inputs, probabilities,
+        super().__init__(name, dataset_producer, inputs, probabilities, core,
                          tf.keras.losses.CategoricalCrossentropy(),
                          metrics, out_dir, run_name,
-                         monitor='val_sparse_categorical_accuracy')
+                         monitor='val_sparse_categorical_accuracy',
+                         optimizer=optimizer)

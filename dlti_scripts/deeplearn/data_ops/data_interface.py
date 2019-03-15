@@ -28,10 +28,12 @@ class CsvReader(DataReader):
         dataset = tf.data.experimental.CsvDataset(str(path), shape)
         if mode & DataMode.LABELS:
             if mode & DataMode.INPUTS:
-                dataset\
-                    = dataset.map(lambda x, y: (x, self.label_transform(y)))
+                dataset = dataset.map(
+                    lambda *x: (x[:-1], self.label_transform(x[-1])))
             else:
-                dataset = dataset.map(self.label_transform)
+                dataset = dataset.map(lambda *x: ((), self.label_transform(x)))
+        else:
+            dataset = dataset.map(lambda *x: (x, ()))
 
         if mode & DataMode.SHUFFLE:
             dataset = dataset.shuffle(1000)
