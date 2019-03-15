@@ -9,7 +9,6 @@ from tensorflow.keras.models import Model
 import tensorflow.keras.callbacks as cb
 
 from ..abstract import (DataMode, DataReader)
-from .input_output import get_out_dir
 
 __all__ = ['ModelTrainer']
 
@@ -94,7 +93,7 @@ class RestoreBest(cb.Callback):
 class ModelTrainer:
     name: str
     data_reader: DataReader
-    outdir: Path
+    outpath: Path
     _model: Model
     _epoch: int
     fileformat: str
@@ -103,13 +102,13 @@ class ModelTrainer:
     _checkpointformat: Path
 
     def __init__(self, name: str, data_reader: DataReader, model: Model,
-                 outdir: Path, run_name: str = 'default',
+                 outpath: Path, run_name: str = 'default',
                  append_format: str = '', monitor: str = 'val_loss'):
         self.name = name
         self.data_reader = data_reader
         self._model = model
         self._epoch = 0
-        self.outdir = get_out_dir(outdir, model.get_config())
+        self.outpath = outpath
         self.fileformat = self.name + '.{epoch:04d}' + append_format
         self.run_name = run_name
         self.monitor = monitor
@@ -132,7 +131,7 @@ class ModelTrainer:
                 cb.ModelCheckpoint(self._checkpointformat,
                                    save_weights_only=True, period=50,
                                    verbose=verbose),
-                cb.TensorBoard(log_dir=self.outdir, write_images=True),
+                cb.TensorBoard(log_dir=str(self.outpath), write_images=True),
                 cb.EarlyStopping(monitor=self.monitor, patience=patience,
                                  restore_best_weights=True,
                                  verbose=verbose),
@@ -164,8 +163,8 @@ class ModelTrainer:
     @run_name.setter
     def run_name(self, value: str):
         self._run_name = value
-        self._checkpointpath = self.outdir.joinpath(self.run_name,
-                                                    "checkpoints")
+        self._checkpointpath = self.outpath.joinpath(self.run_name,
+                                                     "checkpoints")
         if not self._checkpointpath.exists():
             self._checkpointpath.mkdir(parents=True)
         self._checkpointformat = str(

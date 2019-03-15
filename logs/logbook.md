@@ -56,12 +56,32 @@
   debug context extraction, refine unit tests
   
 #### Saturday 9 Mar
-* 13:30-
+* 13:30-17:45 4.25h
   fix astor for large integers, 
   think of parso-based type annotation stripping approaches,
-  finish basic tests for identifier and context data preprocessing
-  start reading up on hpc clusters
+  finish basic tests for identifier and context data preprocessing,
+  start reading up on hpc clusters,
+  improve data preprocessing pipeline
 
+#### Monday 11 Mar
+* 19:00-21:00 2.00h
+  read past dissertations
+  
+#### Tuesday 12 Mar
+* 11:00-12:00 1.00h
+  15:00-17:00 2.00h
+  start implementic semantic grouping
+
+#### Wednesday 13 Mar
+* 12:30-14:45 2.25h
+  learning about hpc, preparing to train
+
+#### Thursday 14 Mar
+* 09:30-10:00 0.50h
+  experimenting with hpc
+  
+#### Friday 15 Mar
+* 10:30-
 
 ## Bibliography
 

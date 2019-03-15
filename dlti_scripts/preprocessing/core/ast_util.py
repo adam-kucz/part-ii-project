@@ -1,22 +1,20 @@
 """Utility functions for python AST manipulation"""
 import ast
 import inspect
-from typing import Optional, Sequence, Tuple, Union
+from typing import Sequence, Union
 
 # typed_ast module is generated in a weird, pylint-incompatible, way
-# pylint: disable=no-name-in-module
 import typed_ast.ast3 as t_ast3
 
-__all__ = ["ASTPos", "get_node", "to_different_ast"]
+__all__ = ['ASTPos', 'get_node', 'to_different_ast']
 
 #: position in python AST, either from ast or typed_ast
 ASTPos = Sequence[Union[str, int]]
-Pos = Tuple[int, int]
+
+AST = Union[ast.AST, t_ast3.AST]
 
 
-# pylint: disable=no-member
-def get_node(node: Union[ast.AST, t_ast3.AST], pos: ASTPos)\
-        -> Optional[Union[ast.AST, t_ast3.AST]]:
+def get_node(node: AST, pos: ASTPos) -> AST:
     if not isinstance(pos, Sequence):
         raise ValueError("Invalid AST position: {}".format(pos))
     if not pos:
@@ -26,10 +24,8 @@ def get_node(node: Union[ast.AST, t_ast3.AST], pos: ASTPos)\
     try:
         child = getattr(node, pos[0])
     except AttributeError as err:
-        dump = (ast if isinstance(node, ast.AST) else t_ast3).dump(node)
-        print("When trying to get element at {} got {}, in node\n{}\n"
-              .format(pos, err, dump))
-        raise AttributeError(err)
+        __printerr(pos, node, err)
+        raise err
     if isinstance(child, list):
         if isinstance(pos[1], str):
             return None
@@ -37,25 +33,19 @@ def get_node(node: Union[ast.AST, t_ast3.AST], pos: ASTPos)\
         try:
             return get_node(child[i], pos[2:])
         except AttributeError as err:
-            dump = (ast if isinstance(node, ast.AST) else t_ast3).dump(node)
-            print("When trying to get element at {} got {}, in node\n{}\n"
-                  .format(pos, err, dump))
+            __printerr(pos, node, err)
             raise err
         except IndexError as err:
-            dump = (ast if isinstance(node, ast.AST) else t_ast3).dump(node)
-            print("When trying to get element at {} got {}, in node\n{}\n"
-                  .format(pos, err, dump if len(pos) <= 2 else node.body))
+            __printerr(pos, node, err)
             raise err
     try:
         return get_node(child, pos[1:])
     except AttributeError as err:
-        dump = (ast if isinstance(node, ast.AST) else t_ast3).dump(node)
-        print("When trying to get element at {} got {}, in node\n{}\n"
-              .format(pos, err, dump))
-        raise AttributeError(err)
+        __printerr(pos, node, err)
+        raise err
 
 
-def to_different_ast(node: t_ast3.AST, target=ast):
+def to_different_ast(node: AST, target=ast):
     """
     Transform a given ast to one defined in target module
 
@@ -77,8 +67,7 @@ def to_different_ast(node: t_ast3.AST, target=ast):
                            if isinstance(v, src.AST) else v
                            for v in value]
             except AttributeError as err:
-                print("Trying to convert {} from node {}"
-                      .format(value, node))
+                print("Trying to convert {} from node {}".format(value, node))
                 raise err
         elif isinstance(value, src.AST):
             new_val = to_different_ast(value, target)
@@ -86,3 +75,9 @@ def to_different_ast(node: t_ast3.AST, target=ast):
             new_val = value
         fields[field] = new_val
     return claz(**fields)
+
+
+def __printerr(pos: ASTPos, node: AST, err: Exception) -> None:
+    dump = (ast if isinstance(node, ast.AST) else t_ast3).dump(node)
+    print("When trying to get element at {} got {}, in node\n{}\n"
+          .format(pos, err, dump))
