@@ -83,8 +83,15 @@
 #### Friday 15 Mar
 * 10:30-13:00 2.50h
   clean up output directory structure
-* 13:45-
-  add dropout
+* 13:45-16:45 3.00h
+  add dropout, start training context net 
+* 19:15-22:00 2.45h
+  start working on synthetic data generation
+  
+#### Monday 18 Mar
+* 13:45-18:45 5.00h
+  implement data synthesis classes
+  
 
 ## Bibliography
 

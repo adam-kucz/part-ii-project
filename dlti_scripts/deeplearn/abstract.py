@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from enum import auto, Flag, unique
+from enum import auto, Flag
 from pathlib import Path
 from typing import Optional
 
