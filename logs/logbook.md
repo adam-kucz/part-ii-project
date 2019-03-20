@@ -89,7 +89,7 @@
   start working on synthetic data generation
   
 #### Monday 18 Mar
-* 13:45-18:45 5.00h
+* 13:45-22:15 8.50h
   implement data synthesis classes
   
 

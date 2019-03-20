@@ -3,6 +3,8 @@ import csv
 from pathlib import Path
 from typing import NamedTuple
 
+from ..util import csv_read
+
 
 class VocabStats(NamedTuple):
     included: int
@@ -11,14 +13,13 @@ class VocabStats(NamedTuple):
 
 def create_vocab(in_filename: Path,
                  out_filename: Path, percentage: float) -> VocabStats:
-    with in_filename.open(newline='') as csvfile,\
-         out_filename.open(mode='w') as vocabfile:
-        reader = csv.reader(csvfile, delimiter=',')
-        types = tuple(map(lambda t: t[-1], reader))
+    with out_filename.open(mode='w', newline='') as vocab_file:
+        types = [row[-1] for row in csv_read(in_filename)]
+        writer = csv.writer(vocab_file)
         vocab_size = 0
         included = 0
         for typ, count in Counter(types).most_common():
-            print(typ, file=vocabfile)
+            writer.writerow([typ])
             vocab_size = 0
             included += count
             if included / len(types) >= percentage:

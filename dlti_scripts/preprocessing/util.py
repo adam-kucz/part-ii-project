@@ -1,7 +1,8 @@
 """Collection of useful methods that do not belong anywhere else"""
 from collections import defaultdict
+import csv
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple, TypeVar
+from typing import Callable, Dict, Iterable, List, Optional, Tuple, TypeVar
 
 __all__ = ['bind', 'extract_dir']
 
@@ -40,3 +41,13 @@ def extract_dir(repo_dir: Path,
         except Exception as exception:  # pylint: disable=broad-except
             exceptions[type(exception)].append((pypath, exception))
     return exceptions
+
+
+def csv_read(path: Path) -> List[List]:
+    with path.open(newline='') as csvfile:
+        return list(csv.reader(csvfile))
+
+
+def csv_write(path: Path, rows: Iterable[List]):
+    with path.open(mode='w', newline='') as csvfile:
+        csv.writer(csvfile).writerows(rows)

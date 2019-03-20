@@ -5,12 +5,13 @@ from .collections import StringOf
 from .transform import Apply, Elements, Scale, Sized, SuchThat
 
 __all__ = ['GenContext', 'GEN_IDENTIFIER', 'GEN_IDENTIFIER_CHAR',
-           'GEN_TOKEN', 'GEN_TOKEN_CHAR']
+           'GEN_TOKEN', 'GEN_TOKEN_CHAR', 'IDENTIFIER_CHARS', 'TOKEN_CHARS']
 
 TOKEN_CHARS = ''.join(filter(lambda c: c not in string.whitespace or c == '\t',
                              string.printable))
 IDENTIFIER_CHARS = string.ascii_lowercase + string.ascii_uppercase\
                    + string.digits + '_'
+
 
 GEN_TOKEN_CHAR = Elements(TOKEN_CHARS)
 GEN_IDENTIFIER_CHAR = Elements(IDENTIFIER_CHARS)

@@ -9,6 +9,7 @@ from ..modules.contextnet import ContextNet
 from .standard import CategoricalStandalone
 from ..data_ops.data_interface import CsvReader
 from ..data_ops.data_transformers import CategoricalIndex
+from ..util import csv_read
 
 __all__ = ['FullCharCNN', 'FullContextNet']
 
@@ -18,7 +19,7 @@ class FullCharCNN(CategoricalStandalone):
                  params: Mapping[str, Any], out_dir: Path,
                  run_name: str = 'default',
                  optimizer=tf.keras.optimizers.Adam()):
-        vocab: List[str] = vocab_path.read_text().splitlines()
+        vocab: List[str] = [row[0] for row in csv_read(vocab_path)]
         dataset_producer = CsvReader((tf.string,), (tf.string,),
                                      CategoricalIndex(vocab, unk=True),
                                      batch_size)
@@ -34,7 +35,7 @@ class FullContextNet(CategoricalStandalone):
                  params: Mapping[str, Any], out_dir: Path,
                  run_name: str = 'default',
                  optimizer=tf.keras.optimizers.Adam()):
-        vocab: List[str] = vocab_path.read_text().splitlines()
+        vocab: List[str] = [row[0] for row in csv_read(vocab_path)]
         one_side = (tf.constant(value=""),) * params['ctx_len']
         dataset_producer = CsvReader(one_side + (tf.string,) + one_side,
                                      (tf.string,),

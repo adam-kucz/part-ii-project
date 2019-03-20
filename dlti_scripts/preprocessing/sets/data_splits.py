@@ -120,8 +120,8 @@ def write_project(outfile: IO, proj_dir: Path) -> None:
 
 
 def write_split(outfilename: Path, projdir: Path, projects: List[str]) -> None:
-    print("Trying to write split {} to file {}"
-          .format(projects, outfilename))
+    print("Writing split of {} projects to {}"
+          .format(len(projects), outfilename))
     if not outfilename.parent.exists():
         outfilename.parent.mkdir(parents=True)
     with outfilename.open('w', newline='') as outfile:  # type: IO

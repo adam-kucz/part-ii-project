@@ -5,6 +5,8 @@ from .scheme import Scheme
 
 __all__ = ['Conditional', 'Deterministic', 'Identity']
 
+A = TypeVar('A')
+B = TypeVar('B')
 T = TypeVar('T')
 
 
@@ -22,9 +24,7 @@ class Conditional(Scheme[List], Generic[T]):
     def __init__(self, func: Callable[[T], Generator],
                  gen: Generator[T], size: int):
         super().__init__(
-            Bind(lambda a: Map(lambda b: _concat(a, b),
-                               func(a)),
-                 gen),
+            Bind(gen, lambda a: Map(lambda b: _concat(a, b), func(a))),
             size)
 
 
@@ -36,3 +36,18 @@ class Deterministic(Scheme[List], Generic[T]):
 class Identity(Deterministic[T]):
     def __init__(self, gen: Generator[T], size: int):
         super().__init__(gen, size, lambda x: x)
+
+
+class HiddenVariable(Scheme[List], Generic[A, B]):
+    def __init__(self, func_a: Callable[[T], A], func_b: Callable[[T], B],
+                 gen: Generator[T], size: int):
+        super().__init__(
+            Map(lambda t: _concat(func_a(t), func_b(t)), gen), size)
+
+
+class InverseConditional(Scheme[List], Generic[T]):
+    def __init__(self, func: Callable[[T], Generator],
+                 gen: Generator[T], size: int):
+        super().__init__(
+            Bind(gen, lambda a: Map(lambda b: _concat(b, a), func(a)),),
+            size)

@@ -12,7 +12,7 @@ def trainer_producer(params, data_path, batch_size, **kwargs):
     charcnn.load_weights(params['charcnn_weights'])
     charcnn.trainable = False
     params['token_net'] = charcnn
-    return FullContextNet(data_path.joinpath("vocab.txt"),
+    return FullContextNet(data_path.joinpath("vocab.csv"),
                           batch_size, params, **kwargs)
 
 

@@ -15,15 +15,12 @@ class CharCNN(Sequential):
         super().__init__()
         self.add(InputLayer(input_shape=(), dtype=tf.string))
         self.add(StringEncoder(params['identifier_length']))
-        for conv_params in params['convolutional']:
-            self.add(Convolution1D(filters=conv_params['filters'],
-                                   kernel_size=conv_params['kernel_size'],
-                                   padding='valid',
-                                   use_bias=conv_params.get('bias', False)))
-            self.add(ReLU())
-            self.add(SpatialDropout1D(conv_params.get("dropout", 0)))
+        for layer_params in params['convolutional']:
+            self.add(Convolution1D(**layer_params['conv']))
+            if 'dropout' in layer_params:
+                self.add(SpatialDropout1D(layer_params['dropout']))
         self.add(Flatten())
-        for dense_params in params['dense']:
-            self.add(Dense(units=dense_params['units']))
-            self.add(ReLU())
-            self.add(Dropout(dense_params.get("dropout", 0)))
+        for layer_params in params['dense']:
+            self.add(Dense(**layer_params['dense']))
+            if 'dropout' in layer_params:
+                self.add(Dropout(layer_params['dropout']))

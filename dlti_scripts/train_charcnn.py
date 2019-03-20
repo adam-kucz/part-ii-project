@@ -3,7 +3,7 @@ import deeplearn.train
 
 
 def trainer_producer(params, data_path, batch_size, **kwargs):
-    return FullCharCNN(data_path.joinpath("vocab.txt"),
+    return FullCharCNN(data_path.joinpath("vocab.csv"),
                        batch_size, params, **kwargs)
 
 

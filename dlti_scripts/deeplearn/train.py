@@ -26,8 +26,8 @@ def interactive(
         trainer_producer: Callable[[int, Dict[str, Any], dict], ModelTrainer],
         train_name: str = 'train.csv',
         validate_name: str = 'validate.csv',
-        final_checkpoint: str = 'final.keras',
-        core_checkpoint: str = 'core_final.keras'):
+        final_checkpoint: str = 'weights_{}.keras',
+        core_checkpoint: str = 'core_weights_{}.keras'):
     parser = argparse.ArgumentParser(
         description="Run '{}'".format(program_name),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -45,8 +45,8 @@ def interactive(
                         help='number of training epochs')
     parser.add_argument('--optimizer', default='adagrad',
                         help='optimizer to use in training')
-    parser.add_argument('--learning_rate', default=0.1, type=float,
-                        help='learning rate [ignored]')
+    # parser.add_argument('--learning_rate', default=0.1, type=float,
+    #                     help='learning rate [ignored]')
     parser.add_argument('-t', '--test', action='store_true',
                         help='test only (on the validation set)')
     parser.add_argument('-v', '--verbose', type=int, default=1,
@@ -73,7 +73,8 @@ def interactive(
 
     if not args.test:
         trainer.train(train_path, validate_path,
-                      epochs=args.epochs, verbose=args.verbose)
+                      epochs=args.epochs, batch_size=args.batch_size,
+                      verbose=args.verbose)
         trainer.save_weights(final_checkpoint)
         trainer.save_core_weights(core_checkpoint)
     trainer.test(validate_path)

@@ -40,8 +40,10 @@ class RestoreBest(cb.Callback):
     verbose: int
     best_epoch: int
 
-    def __init__(self, monitor='val_loss', verbose=0, mode='auto'):
+    def __init__(self, set_epoch=lambda _: None,
+                 monitor='val_loss', verbose=0, mode='auto'):
         super().__init__()
+        self.set_epoch = set_epoch
         self.monitor = monitor
 
         self.verbose = verbose
@@ -76,6 +78,7 @@ class RestoreBest(cb.Callback):
     def on_train_end(self, logs=None):  # pylint: disable=unused-argument
         if self.best_epoch > 0:
             self.model.set_weights(self.best_weights)
+            self.set_epoch(self.best_epoch)
             if self.verbose > 0:
                 print('Restoring best weights from epoch {}'
                       .format(self.best_epoch))
@@ -123,34 +126,37 @@ class ModelTrainer:
         except tf.errors.FailedPreconditionError:
             pass
 
-    def train(self, trainpath, valpath, epochs=100, patience=64, verbose=1):
+    def train(self, trainpath, valpath,
+              epochs=100, batch_size=64, patience=64, verbose=1):
         self._ensure_initialized()
         train_dataset = self.data_reader(trainpath, DataMode.TRAIN)
         val_dataset = self.data_reader(valpath, DataMode.VALIDATE)
         log_dir = str(self.outpath.joinpath(self.run_name, "tensorboard"))
-        result = self.model.fit(
+
+        def set_epoch(epoch):
+            self._epoch = epoch
+        return self.model.fit(
             x=train_dataset,
             initial_epoch=self.epoch, epochs=self.epoch + epochs,
             callbacks=[
                 cb.ModelCheckpoint(self._checkpointformat,
                                    save_weights_only=True, period=50,
                                    verbose=verbose),
-                cb.TensorBoard(log_dir=log_dir, write_images=True),
+                cb.TensorBoard(log_dir=log_dir),
                 cb.EarlyStopping(monitor=self.monitor, patience=patience,
                                  restore_best_weights=True,
                                  verbose=verbose),
-                RestoreBest(monitor=self.monitor, verbose=verbose)],
+                RestoreBest(set_epoch=set_epoch, monitor=self.monitor,
+                            verbose=verbose)],
             verbose=verbose, shuffle=False, validation_data=val_dataset,
             steps_per_epoch=_steps_per_epoch(train_dataset),
             validation_steps=_steps_per_epoch(val_dataset))
-        self._epoch += epochs
-        return result
 
     def test(self, valpath: Path, verbose=1):
         self._ensure_initialized()
         val_dataset = self.data_reader(valpath, DataMode.TEST)
-        self.model.evaluate(x=val_dataset, verbose=verbose,
-                            steps=_steps_per_epoch(val_dataset))
+        return self.model.evaluate(x=val_dataset, verbose=verbose,
+                                   steps=_steps_per_epoch(val_dataset))
 
     @property
     def model(self):
@@ -174,30 +180,33 @@ class ModelTrainer:
         self._checkpointformat = str(
             self._checkpointpath.joinpath(self.fileformat))
 
-    def load_weights(self, filename: Optional[str] = None):
+    def load_weights(self, filename_format: Optional[str] = None):
         found = None
-        if filename:
-            path = self._checkpointpath.joinpath(filename)
-            if path.exists():
-                found = str(path)
-        else:
-            # TODO: remove '.index' hack
-            for filepath in self._checkpointpath.iterdir():
-                relpath = filepath.relative_to(self._checkpointpath)
-                parsed = parse(self.fileformat + '.index', str(relpath))
-                if parsed and parsed['epoch'] > self.epoch:
-                    found = str(filepath)
-                    self._epoch = parsed['epoch']
-            found = found[:-len('.index')]
+        # TODO: remove '.index' hacks
+        file_format = filename_format or (self.fileformat + '.index')
+        for filepath in self._checkpointpath.iterdir():
+            relpath = filepath.relative_to(self._checkpointpath)
+            parsed = parse(file_format, str(relpath))
+            if not parsed:
+                continue
+            epoch = int(parsed['epoch'] if 'epoch' in parsed else parsed[0])
+            if epoch > self.epoch:
+                found = str(filepath)
+                self._epoch = epoch
 
         if not found:
             raise ValueError("Cannot load weights, no saved file found")
+
+        if found.endswith('.index'):
+            found = found[:-len('.index')]
         self.model.load_weights(found)
         print("Loaded wieghts from epoch {}, file {}"
               .format(self.epoch, found))
 
-    def save_weights(self, filename):
+    def save_weights(self, filename_format):
+        filename = filename_format.format(self.epoch)
         self.model.save_weights(str(self._checkpointpath.joinpath(filename)))
 
-    def save_core_weights(self, filename):
+    def save_core_weights(self, filename_format):
+        filename = filename_format.format(self.epoch)
         self._core.save_weights(str(self._checkpointpath.joinpath(filename)))
