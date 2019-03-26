@@ -5,13 +5,10 @@ import unittest
 
 import typed_ast.ast3 as ast3
 
-from preprocessing.core.context.extract import extract_type_contexts
-from preprocessing.core.context.type_collectors import AnonymisingTypeCollector
-from preprocessing.core.type_representation import (
-    ANY_TYPE, GenericType, NestedType, NONE_TYPE, SimpleType, UnionType)
-from preprocessing.core.pairs.extract import extract_type_identifiers
-import preprocessing.sets.data_splits as splits
-from .util import DATADIR, PROJDIR, RAW, TestWithOutDir, OUT
+# from preprocessing.core.context.extract import extract_type_contexts
+# from preprocessing.core.type_representation import (
+#     ANY_TYPE, GenericType, NestedType, NONE_TYPE, SimpleType, UnionType)
+from test.util import DATADIR, PROJDIR, RAW, TestWithOutDir, OUT
 
 TEST_CASES = {
     'jedi': {'path': RAW.joinpath("jedi",
@@ -87,34 +84,6 @@ TEST_CASES = {
 }
 
 
-@unittest.skip("data download tests not implemented yet, low priority")
-class TestDataDownload(TestWithOutDir):
-
-    def test_download(self):
-        raise NotImplementedError
-
-    def test_nonpython_removal(self):
-        raise NotImplementedError
-
-    def test_no_redownload_when_present(self):
-        raise NotImplementedError
-
-
-class TestPairExtraction(TestWithOutDir):
-
-    def test_file_extraction(self):
-        for name, data in TEST_CASES.items():
-            with self.subTest(test=name):
-                extract_type_identifiers(data['path'], OUT, fun_as_ret=True)
-                with OUT.open(newline='') as outfile:
-                    actual = tuple(csv.reader(outfile, delimiter=','))
-                    self.assertEqual(len(actual), len(data['pairs']))
-                    for i, line, exp in zip(range(len(actual)),
-                                            actual, data['pairs']):
-                        with self.subTest(line=line, i=i):
-                            self.assertEqual(line, exp)
-
-
 class TestContextExtraction(TestWithOutDir):
 
     def test_pos_collection(self):
@@ -165,25 +134,3 @@ class TestContextExtraction(TestWithOutDir):
                                                 actual, expected):
                             with self.subTest(line=line, i=i):
                                 self.assertEqual(line, exp)
-
-
-DATASETS = {"identifiers": {"train": 43952, "validate": 30488, "test": 10222},
-            "identifiers_fun_as_ret": {"train": 43679, "validate": 30189,
-                                       "test": 9745},
-            "contexts_3_fun_as_ret": {"train": 43649, "validate": 29557,
-                                      "test": 9662}}
-
-
-class TestSplitData(TestWithOutDir):
-
-    def test_from_splitfile(self):
-        for datasetname, splitdata in DATASETS.items():
-            splits.from_logfile(DATADIR.joinpath("raw", datasetname), OUT,
-                                PROJDIR.joinpath("logs", "data-split.txt"))
-            for splitname, length in splitdata.items():
-                dataset_path: Path = OUT.joinpath(splitname)\
-                                        .with_suffix(".csv")
-                with dataset_path.open(newline='') as outfile:
-                    lines: List[str] = tuple(csv.reader(outfile))
-                    with self.subTest(dataset=datasetname, division=splitname):
-                        self.assertEqual(len(lines), length)

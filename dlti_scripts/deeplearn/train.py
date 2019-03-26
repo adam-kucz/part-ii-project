@@ -1,4 +1,5 @@
 import argparse
+from datetime import datetime
 import json
 import os
 from pathlib import Path
@@ -28,6 +29,7 @@ def interactive(
         validate_name: str = 'validate.csv',
         final_checkpoint: str = 'weights_{}.keras',
         core_checkpoint: str = 'core_weights_{}.keras'):
+    start_time: datetime = datetime.now()
     parser = argparse.ArgumentParser(
         description="Run '{}'".format(program_name),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -37,16 +39,18 @@ def interactive(
                         help='path to directory with data files')
     parser.add_argument('out_path', type=Path,
                         help='path to save output in')
-    parser.add_argument('--run_name', default='default', type=str,
+    parser.add_argument('-r', '--run_name', default='default', type=str,
                         help='unique name for the run')
-    parser.add_argument('--batch_size', default=64, type=int,
+    parser.add_argument('-b', '--batch_size', default=64, type=int,
                         help='batch size')
-    parser.add_argument('--epochs', default=100, type=int,
+    parser.add_argument('-e', '--epochs', default=100, type=int,
                         help='number of training epochs')
-    parser.add_argument('--optimizer', default='adagrad',
+    parser.add_argument('-o', '--optimizer', default='adagrad',
                         help='optimizer to use in training')
-    # parser.add_argument('--learning_rate', default=0.1, type=float,
-    #                     help='learning rate [ignored]')
+    parser.add_argument('-p', '--patience', type=int, default=64,
+                        help=("number of epochs without improvement"
+                              " to wait before early stopping"))
+    parser.add_argument('-l', '--learning_rate', default=0.01, type=float)
     parser.add_argument('-t', '--test', action='store_true',
                         help='test only (on the validation set)')
     parser.add_argument('-v', '--verbose', type=int, default=1,
@@ -57,10 +61,7 @@ def interactive(
     validate_path: Path = args.data_path.joinpath(validate_name)
 
     params = json.loads(args.params.read_text())
-    try:
-        optimizer = tf.keras.optimizers.get(args.optimizer)
-    except ValueError:
-        optimizer = tf.keras.optimizers.Adam()
+    optimizer = tf.keras.optimizers.get(args.optimizer)
     trainer = trainer_producer(params, args.data_path, args.batch_size,
                                out_dir=args.out_path, run_name=args.run_name,
                                optimizer=optimizer)
@@ -73,8 +74,10 @@ def interactive(
 
     if not args.test:
         trainer.train(train_path, validate_path,
-                      epochs=args.epochs, batch_size=args.batch_size,
-                      verbose=args.verbose)
+                      epochs=args.epochs, learning_rate=args.learning_rate,
+                      patience=args.patience, verbose=args.verbose)
         trainer.save_weights(final_checkpoint)
         trainer.save_core_weights(core_checkpoint)
     trainer.test(validate_path)
+
+    print("Finished successfully in {}".format(datetime.now() - start_time))

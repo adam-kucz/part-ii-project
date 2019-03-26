@@ -1,0 +1,8 @@
+{
+  "name": "identifier-f",
+  "split": {
+    "train": 43679,
+    "validate": 30189,
+    "test": 9745
+  }
+}

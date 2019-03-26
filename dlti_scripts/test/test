@@ -1,0 +1,18 @@
+  /home/acalc79/synced/part-ii-project/dlti_scripts/test:
+  insgesamt 16
+  drwxr-xr-x 4 acalc79 acalc79 4096 Mar 26 12:01 .
+  drwxrwxr-x 8 acalc79 acalc79 4096 Mar 25 16:21 ..
+  -rw-rw-r-- 1 acalc79 acalc79  404 Mar  9 15:00 util.py~
+  -rw-rw-r-- 1 acalc79 acalc79  548 Mar  9 16:31 util.py
+  drwxr-xr-x 2 acalc79 acalc79 4096 Mar 26 12:02 integration_tests
+  drwxr-xr-x 6 acalc79 acalc79 4096 Mar 26 12:01 unit_tests
+
+  /home/acalc79/synced/part-ii-project/dlti_scripts/test/unit_tests:
+  insgesamt 44
+  drwxr-xr-x 6 acalc79 acalc79 4096 Mar 26 12:01 .
+  drwxr-xr-x 4 acalc79 acalc79 4096 Mar 26 12:01 ..
+  drwxrwxr-x 3 acalc79 acalc79 4096 Mar  7 18:23 data
+  -rw-r--r-- 1 acalc79 acalc79    0 Mar  7 17:52 __init__.py
+  drwxrwxr-x 3 acalc79 acalc79 4096 Mar 25 13:57 preprocessing
+  drwxr-xr-x 2 acalc79 acalc79 4096 Mar 26 12:00 __pycache__
+  -rw-rw-r-- 1 acalc79 acalc79 8857 Mar 26 11:51 test_preprocessing.py

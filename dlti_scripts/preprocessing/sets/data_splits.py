@@ -119,9 +119,11 @@ def write_project(outfile: IO, proj_dir: Path) -> None:
             outfile.write(filepath.read_text())
 
 
-def write_split(outfilename: Path, projdir: Path, projects: List[str]) -> None:
-    print("Writing split of {} projects to {}"
-          .format(len(projects), outfilename))
+def write_split(outfilename: Path, projdir: Path, projects: List[str],
+                verbose: int = 1) -> None:
+    if verbose > 0:
+        print("Writing split of {} projects to {}"
+              .format(len(projects), outfilename))
     if not outfilename.parent.exists():
         outfilename.parent.mkdir(parents=True)
     with outfilename.open('w', newline='') as outfile:  # type: IO
@@ -129,7 +131,7 @@ def write_split(outfilename: Path, projdir: Path, projects: List[str]) -> None:
             write_project(outfile, projdir.joinpath(project))
 
 
-def from_logfile(datadir: Path, outdir: Path, logpath: Path):
+def from_logfile(datadir: Path, outdir: Path, logpath: Path, verbose: int = 1):
     for line in logpath.read_text().split('\n'):
         if line:
             lineformat: str = "{split} ({}%): {projs}"
@@ -139,11 +141,12 @@ def from_logfile(datadir: Path, outdir: Path, logpath: Path):
                                  .format(line, lineformat))
             out_filename: Path = outdir.joinpath(parsed['split'])\
                                        .with_suffix('.csv')
-            write_split(out_filename, datadir, literal_eval(parsed['projs']))
+            write_split(out_filename, datadir, literal_eval(parsed['projs']),
+                        verbose=verbose)
 
 
 def create_new(splitpath: Path, datadir: Path,
-               outdir: Path, logpath: Path)\
+               outdir: Path, logpath: Path, verbose: int = 1)\
                -> Optional[Dict[str, Tuple[float, List[str]]]]:
     logfile: IO = logpath.open('w')
     splits: Optional[Mapping[str, Tuple[float, List[str]]]]\
@@ -154,7 +157,7 @@ def create_new(splitpath: Path, datadir: Path,
     for split, (fraction, project_list) in splits.items():\
             # type: str, Tuple[float, List[str]]
         out_filename: Path = outdir.joinpath(split).with_suffix('.csv')
-        write_split(out_filename, datadir, project_list)
+        write_split(out_filename, datadir, project_list, verbose=verbose)
         results[split] = (fraction * 100, project_list)
         print("{} ({}%): {}".format(split, *results[split]), file=logfile)
     return results

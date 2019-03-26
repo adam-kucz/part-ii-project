@@ -4,7 +4,7 @@ from hashlib import md5
 from pathlib import Path
 from typing import Any, Iterable, List, TypeVar
 
-__all__ = ['stable_hash']
+__all__ = ['csv_read', 'csv_write', 'stable_hash']
 
 
 A = TypeVar('A')  # pylint: disable=invalid-name

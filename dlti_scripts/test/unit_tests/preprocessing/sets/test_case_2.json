@@ -1,0 +1,8 @@
+{
+  "name": "context-3-f",
+  "split": {
+    "train": 43649,
+    "validate": 29557,
+    "test": 9662
+  }
+}

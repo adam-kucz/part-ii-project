@@ -1,0 +1,32 @@
+class ConfigItem(NamedTuple):
+    """
+    Each ``ConfigItem`` represents a single entry in a configuration JsonDict.
+    """
+    name: str
+    annotation: type
+    default_value: Optional[Any] = None
+    comment: str = ''
+
+    def to_json(self) -> JsonDict:
+        json_dict = {
+                "name": self.name,
+                "annotation": json_annotation(self.annotation),
+        }
+
+        if is_configurable(self.annotation):
+            json_dict["configurable"] = True
+
+        if self.default_value != _NO_DEFAULT:
+            try:
+                # Ugly check that default value is actually serializable
+                json.dumps(self.default_value)
+                json_dict["defaultValue"] = self.default_value
+            except TypeError:
+                print(f"unable to json serialize {self.default_value}, using None instead")
+                json_dict["defaultValue"] = None
+
+
+        if self.comment:
+            json_dict["comment"] = self.comment
+
+        return json_dict

@@ -7,8 +7,9 @@ from pytrie import Trie
 # pylint: disable=no-name-in-module
 from typed_ast.ast3 import (
     alias, AnnAssign, arg, Assign, AST, AsyncFor, AsyncFunctionDef, Attribute,
-    AugAssign, ClassDef, ExceptHandler, For, FunctionDef, Global, GeneratorExp,
-    Lambda, ListComp, Module, Name, Nonlocal, SetComp, Store, withitem)
+    AugAssign, ClassDef, comprehension, Dict, DictComp, ExceptHandler, For,
+    FunctionDef, Global, GeneratorExp, Lambda, ListComp, Module,
+    Name, Nonlocal, SetComp, Store)
 
 from ..ast_util import ASTPos
 from ..context.ctx_aware_ast import ContextAwareNodeVisitor
@@ -18,14 +19,14 @@ __all__ = ['OccurenceCollector']
 
 class OccurenceCollector(ContextAwareNodeVisitor):
     """Collects and saves occurences of identifiers"""
-    reference_locs: Trie  # Mapping[ASTPos, Mapping[str, Iterable[ASTPos]]]
+    reference_locs: Trie  # Mapping[ASTPos, Mapping[str, Set[ASTPos]]]
     _current_contexts: List[MutableMapping[str, Set[ASTPos]]]
 
     def __init__(self) -> None:
         super().__init__()
         self.reference_locs = Trie()
         self._current_contexts = []
-        self._defining = False
+        self._must_exist = False
 
     def _find_var_env(
             self, name: str, may_define: bool = False,
@@ -68,12 +69,6 @@ class OccurenceCollector(ContextAwareNodeVisitor):
             self.generic_visit(node)
         return self._current_contexts.pop()
 
-    def _visit_definitions(self, node: AST):
-        temp = self._defining
-        self._defining = True
-        self.generic_visit(node)
-        self._defining = temp
-
     def _visit_in_order(self, node: AST, *fields: List[str]):
         for field in fields:
             value = getattr(node, field)
@@ -87,6 +82,16 @@ class OccurenceCollector(ContextAwareNodeVisitor):
             elif isinstance(value, AST):
                 self.visit(value)
             self.current_pos.pop()
+
+    def _visit_must_exist(self, node):
+        temp = self._must_exist
+        self._must_exist = True
+        self.generic_visit(node)
+        self._must_exist = temp
+
+    def _may_define(self, ctx):
+        # TODO: maybe try to handle Del in a different way than Load
+        return isinstance(ctx, Store) and not self._must_exist
 
     def visit_Module(self, mod: Module):
         self._visit_with_new_env(mod)
@@ -105,14 +110,14 @@ class OccurenceCollector(ContextAwareNodeVisitor):
     def visit_Assign(self, node: Assign):
         self._visit_in_order(node, 'value', 'targets')
 
-    # tricky because it needs the variable to already be defined
+    # trickier because it needs the variable to already be defined
     # but ctx is just Store()
     def visit_AugAssign(self, node: AugAssign):
         self.visit(node.value)
         self._visit_must_exist(node.target)
 
     def visit_AnnAssign(self, node: AnnAssign):
-        self._visit_in_order(node, 'value', 'annotation', 'target')
+        self._visit_in_order(node, 'value', 'target')
 
     def visit_For(self, node: Union[AsyncFor, For]):
         self._visit_in_order(node, 'iter', 'target', 'body', 'orelse')
@@ -131,10 +136,19 @@ class OccurenceCollector(ContextAwareNodeVisitor):
             self._set_var(name, self._get_var(name, level=1), may_define=True)
 
     def visit_Lambda(self, node: Lambda):
-        self._visit_with_new_env(node)
+        self._visit_with_new_env(node.args, node.body)
+
+    def visit_Dict(self, node: Dict):
+        raise NotImplementedError()
+
+    def visis_comprehension(self, node: comprehension):
+        self._visit_in_order(node, 'iter', 'target', 'ifs')
 
     def visit_ListComp(self, node: Union[ListComp, SetComp, GeneratorExp]):
-        pass
+        self._visit_with_new_env(*node.generators, node.elt)
+
+    def visit_DictComp(self, node: DictComp):
+        self._visit_with_new_env(*node.generators, node.key, node.value)
 
     def visit_SetComp(self, node: SetComp):
         self.visit_ListComp(node)
@@ -143,13 +157,14 @@ class OccurenceCollector(ContextAwareNodeVisitor):
         self.visit_ListComp(node)
 
     def visit_Name(self, node: Name):
-        # TODO: maybe try to handle Del in a different way than Load
-        self._get_var(node.id, may_define=isinstance(node.ctx, Store))\
+        self._get_var(node.id, may_define=self._may_define(node.ctx))\
             .add(self.current_pos)
 
     def visit_Atrribute(self, node: Attribute):
+        # TODO: maybe try to detect what the value is
+        # and merge occurences from different places
         name = to_source(node)[:-1]
-        self._get_var(name, may_define=isinstance(node.ctx, Store))\
+        self._get_var(name, may_define=self._may_define(node.ctx))\
             .add(self.current_pos)
 
     # TODO: think if this can be cleaned up
@@ -169,17 +184,19 @@ class OccurenceCollector(ContextAwareNodeVisitor):
                 self._get_var(name).update(occurences)
 
     def visit_arg(self, node: arg):
-        pass
+        self._get_var(node.arg, may_define=True).add(self.current_pos)
 
     # TODO: implement def visit_keyword
     # complicated because needs to lookup function definition
+    # to find the correct variable
 
     def visit_alias(self, node: alias):
         if node.asname:
-            self._get_var(name, may_define=True).update(occurences)
-            self._visit_definitions(node.asname)
+            self._get_var(node.name, may_define=True).add(self.current_pos)
 
-    def visit_withitem(self, node: withitem):
-        self.visit(node.context_expr)
-        if node.optional_vars:
-            self._visit_definitions(node.optional_vars)
+    # unnecessary because optional_vars are represented
+    # in the exact same way as assignment
+    # and, unlike assignment, they follow context_expr in _fields
+    # def visit_withitem(self, node: withitem):
+    #     self.visit(node.context_expr)
+    #     if node.optional_vars:

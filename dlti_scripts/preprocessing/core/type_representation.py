@@ -69,7 +69,7 @@ class Type(Generic[T], metaclass=ABCMeta):
         return result
 
     def __eq__(self: 'Type', other: 'Type') -> bool:
-        """TODO: fix to handle generics correctly"""
+        # TODO: fix to handle generics correctly
         return str(self) == str(other)
 
     def __hash__(self: 'Type') -> int:
@@ -214,6 +214,10 @@ class UnionType(GenericType[T]):
                 return UnionType(typ if j != i else generalized
                                  for j, typ in enumerate(self.args))
         return None
+
+    def __str__(self: 'UnionType[T]') -> str:
+        return str(self.generic_typ)\
+            + '[' + ', '.join(sorted(str(a) for a in self.args)) + ']'
 
     @staticmethod
     def __flatten(args: Iterable[Type]) -> t.List[Type]:

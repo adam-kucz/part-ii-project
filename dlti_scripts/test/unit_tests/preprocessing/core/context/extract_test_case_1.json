@@ -1,0 +1,6 @@
+{
+  "in_name": "preprocessing/core/test_file_allennlp",
+  "out_name": "preprocessing/core/context/extract_test_case_1_out.csv",
+  "context_size": 0,
+  "fun_as_ret": true
+}

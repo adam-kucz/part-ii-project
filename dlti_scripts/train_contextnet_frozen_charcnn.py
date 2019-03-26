@@ -8,7 +8,10 @@ import deeplearn.train
 
 def trainer_producer(params, data_path, batch_size, **kwargs):
     charcnn_params = json.loads(Path(params['charcnn_path']).read_text())
-    params['token_net'] = CharCNN(charcnn_params)
+    charcnn = CharCNN(charcnn_params)
+    charcnn.load_weights(params['charcnn_weights'])
+    charcnn.trainable = False
+    params['token_net'] = charcnn
     return FullContextNet(data_path.joinpath("vocab.csv"),
                           batch_size, params, **kwargs)
 

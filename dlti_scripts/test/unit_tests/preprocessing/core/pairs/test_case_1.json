@@ -1,0 +1,4 @@
+{
+  "in_name": "preprocessing/core/test_file_allennlp",
+  "out_name": "preprocessing/core/pairs/test_case_1_out.csv"
+}

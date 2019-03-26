@@ -2,9 +2,11 @@ from functools import partial
 
 from preprocessing.core.context.extract import extract_type_contexts
 from preprocessing.util import extract_dir
-from .util import DATADIR, OUT, TestWithOutDir
+from test.util import DATADIR, OUT, TestWithOutDir
 
 
+# TODO: split into individual files in correct locations
+@unittest.skip("data download tests not implemented yet, low priority")
 class TestContextExtractionFull(TestWithOutDir):
 
     def test_z_extract_all(self):
@@ -17,3 +19,4 @@ class TestContextExtractionFull(TestWithOutDir):
             if issubclass(error, (SyntaxError, UnicodeDecodeError)):
                 errors.pop(error, None)
         self.assertEqual(errors, {})
+n

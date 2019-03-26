@@ -126,8 +126,8 @@ class ModelTrainer:
         except tf.errors.FailedPreconditionError:
             pass
 
-    def train(self, trainpath, valpath,
-              epochs=100, batch_size=64, patience=64, verbose=1):
+    def train(self, trainpath, valpath, epochs=100,
+              learning_rate=0.01, patience=64, verbose=1):
         self._ensure_initialized()
         train_dataset = self.data_reader(trainpath, DataMode.TRAIN)
         val_dataset = self.data_reader(valpath, DataMode.VALIDATE)
@@ -143,6 +143,7 @@ class ModelTrainer:
                                    save_weights_only=True, period=50,
                                    verbose=verbose),
                 cb.TensorBoard(log_dir=log_dir),
+                cb.LearningRateScheduler(lambda _: learning_rate),
                 cb.EarlyStopping(monitor=self.monitor, patience=patience,
                                  restore_best_weights=True,
                                  verbose=verbose),
