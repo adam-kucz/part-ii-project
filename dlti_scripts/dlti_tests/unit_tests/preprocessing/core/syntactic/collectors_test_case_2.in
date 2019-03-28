@@ -1,0 +1,7 @@
+from pathlib import Path
+
+a = Path("abc")
+b = a.read_text()
+
+with a.open() as f:
+     c: str = f.read()

@@ -181,7 +181,8 @@ class ModelTrainer:
         self._checkpointformat = str(
             self._checkpointpath.joinpath(self.fileformat))
 
-    def load_weights(self, filename_format: Optional[str] = None):
+    def load_weights(self, filename_format: Optional[str] = None,
+                     load_optimizer: bool = False):
         found = None
         # TODO: remove '.index' hacks
         file_format = filename_format or (self.fileformat + '.index')
@@ -201,12 +202,20 @@ class ModelTrainer:
         if found.endswith('.index'):
             found = found[:-len('.index')]
         self.model.load_weights(found)
+        if load_optimizer:
+            raise NotImplementedError()
         print("Loaded wieghts from epoch {}, file {}"
               .format(self.epoch, found))
 
-    def save_weights(self, filename_format):
+    def save_weights(self, filename_format, save_optimizer: bool = False):
         filename = filename_format.format(self.epoch)
-        self.model.save_weights(str(self._checkpointpath.joinpath(filename)))
+        path = self._checkpointpath.joinpath(filename)
+        self.model.save_weights(str(path))
+        if save_optimizer:
+            raise NotImplementedError()
+            optimizer_path = Path(str(path.with_suffix('')) +
+                                  '-optimizer').with_suffix(path.suffix)
+            self.model.optimizer.save_weights(str(optimizer_path))
 
     def save_core_weights(self, filename_format):
         filename = filename_format.format(self.epoch)

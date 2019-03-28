@@ -1,0 +1,12 @@
+{
+  (): {
+    'a': {('body', 0, 'targets', 0),
+          ('body', 1, 'value'),
+          ('body', 2, 'value', 'left', 'left')},
+    'b': {('body', 1, 'targets', 1),
+          ('body', 2, 'value', 'left', 'right')},
+    'c': {('body', 1, 'targets', 0),
+          ('body', 2, 'target'),
+          ('body', 2, 'value', 'right')}
+  }
+}

@@ -1,0 +1,18 @@
+a = 1
+
+def f(x: int = a, a = a):
+    return x * a
+
+def g(x, b):
+    global a
+    a = b
+    return f(x * b * a)
+
+def h(a):
+    def i():
+        nonlocal a
+        a += 2
+        return g(a)
+    return i() + i() + a
+
+print(a)

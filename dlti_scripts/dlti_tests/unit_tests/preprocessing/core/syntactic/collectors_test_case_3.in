@@ -1,0 +1,10 @@
+class A(object):
+      a = 1
+      b = a
+
+      def __init__(self, b):
+          a = b
+          self.a = b
+
+      def foo(self):
+          return self.a

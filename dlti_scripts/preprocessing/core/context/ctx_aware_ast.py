@@ -1,4 +1,6 @@
 """NodeCollector to extract identifier-type pairs from python files"""
+from typing import Iterable, List, Union
+
 # typed_ast module is generated in a weird, pylint-incompatible, way
 # pylint: disable=no-name-in-module
 import typed_ast.ast3 as ast3
@@ -6,7 +8,11 @@ from typed_ast.ast3 import (AST, NodeVisitor, NodeTransformer)
 
 from ..ast_util import ASTPos
 
-__all__ = ['ContextAwareNodeVisitor', 'ContextAwareNodeTransformer']
+__all__ = ['ContextAwareNodeVisitor', 'ContextAwareNodeTransformer', 'Nesting']
+
+
+Coord = Union[str, int]
+Nesting = Union[Coord, Iterable[Coord]]
 
 
 class ContextAwareNodeVisitor(NodeVisitor):
@@ -16,19 +22,38 @@ class ContextAwareNodeVisitor(NodeVisitor):
         super().__init__()
         self.current_pos = []
 
-    def generic_visit(self, node):
-        for field, value in ast3.iter_fields(node):
-            self.current_pos.append(field)
-            if isinstance(value, list):
-                for i, item in enumerate(value):
-                    # pylint: disable=no-member
-                    if isinstance(item, AST):
-                        self.current_pos.append(i)
-                        self.visit(item)
-                        self.current_pos.pop()
-            elif isinstance(value, AST):
-                self.visit(value)
-            self.current_pos.pop()
+    def _unsafe_visit(self, node: Union[AST, List]):
+        if isinstance(node, List):
+            for i, item in enumerate(node):
+                if isinstance(item, AST):
+                    self.current_pos.append(i)
+                    self.visit(item)
+                    self.current_pos.pop()
+        elif isinstance(node, AST):
+            self.visit(node)
+
+    def nested_visit(self, node: AST, *positions: Nesting):
+        for pos in positions:
+            if isinstance(pos, (str, int)):
+                pos = [pos]
+            value: Union[AST, List[AST]] = node
+            for field in pos:
+                self.current_pos.append(field)
+                if isinstance(field, int):
+                    value = value[field]
+                elif isinstance(field, str):
+                    value = getattr(value, field)
+                else:
+                    raise ValueError(
+                        ("Fields in position should be str or int, "
+                         "not {} (field: {}, in {})")
+                        .format(type(field), field, pos))
+            self._unsafe_visit(value)
+            for _ in pos:
+                self.current_pos.pop()
+
+    def generic_visit(self, node: AST):
+        self.nested_visit(node, *node._fields)
 
 
 class ContextAwareNodeTransformer(NodeTransformer,

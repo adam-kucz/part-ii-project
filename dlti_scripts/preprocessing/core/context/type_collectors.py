@@ -143,6 +143,7 @@ class AnonymisingTypeCollector(ContextAwareNodeTransformer):
                  typ: Optional[Type], new_loc: Optional[ASTPos]) -> None:
         """Saves type and new position if """
         if node and typ and typ.kind != Kind.EMPTY:
+            new_loc = tuple(new_loc) if new_loc is not None else None
             self.type_locs.append((node.tree_path, typ, new_loc))
 
     def add_types(self, nodes: Sequence[AST], typs: Sequence[Type],

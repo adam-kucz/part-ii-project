@@ -1,0 +1,54 @@
+{
+    (): {
+        'a': {('body', 0, 'targets', 0),
+              ('body', 1, 'args', 'defaults', 0),
+              ('body', 1, 'args', 'defaults', 1),
+              ('body', 2, 'body', 0),
+              ('body', 2, 'body', 1, 'targets', 0),
+              ('body', 2, 'body', 2, 'value', 'args', 0, 'right'),
+              ('body', 4, 'value', 'args', 0)},
+        'f': {('body', 1),
+              ('body', 2, 'body', 2, 'value', 'func')},
+        'g': {('body', 2),
+              ('body', 3, 'body', 0, 'body', 2, 'value', 'func')},
+        'h': {('body', 3)},
+        'print': {('body', 4, 'value', 'func')}
+    },
+    ('body', 1): {
+        'x': {('body', 1, 'args', 'args', 0),
+              ('body', 1, 'body', 0, 'value', 'left')},
+        'a': {('body', 1, 'args', 'args', 1),
+              ('body', 1, 'body', 0, 'value', 'right')}
+    },
+    ('body', 2): {
+        'x': {('body', 2, 'args', 'args', 0),
+              ('body', 2, 'body', 2, 'value', 'args', 0, 'left', 'left')},
+        'b': {('body', 2, 'args', 'args', 1),
+              ('body', 2, 'body', 1, 'value'),
+              ('body', 2, 'body', 2, 'value', 'args', 0, 'left', 'right')},
+        'a': {('body', 0, 'targets', 0),
+              ('body', 1, 'args', 'defaults', 0),
+              ('body', 1, 'args', 'defaults', 1),
+              ('body', 2, 'body', 0),
+              ('body', 2, 'body', 1, 'targets', 0),
+              ('body', 2, 'body', 2, 'value', 'args', 0, 'right'),
+              ('body', 4, 'value', 'args', 0)}
+    },
+    ('body', 3): {
+        'a': {('body', 3, 'args', 'args', 0),
+              ('body', 3, 'body', 0, 'body', 0),
+              ('body', 3, 'body', 0, 'body', 1, 'target'),
+              ('body', 3, 'body', 0, 'body', 2, 'value', 'args', 0),
+              ('body', 3, 'body', 1, 'value', 'right')},
+        'i': {('body', 3, 'body', 0),
+              ('body', 3, 'body', 1, 'value', 'left', 'left', 'func'),
+              ('body', 3, 'body', 1, 'value', 'left', 'right', 'func')}
+    },
+    ('body', 3, 'body', 0): {
+        'a': {('body', 3, 'args', 'args', 0),
+              ('body', 3, 'body', 0, 'body', 0),
+              ('body', 3, 'body', 0, 'body', 1, 'target'),
+              ('body', 3, 'body', 0, 'body', 2, 'value', 'args', 0),
+              ('body', 3, 'body', 1, 'value', 'right')}
+    }
+}
