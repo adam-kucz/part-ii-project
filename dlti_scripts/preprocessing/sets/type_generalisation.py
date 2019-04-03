@@ -25,16 +25,20 @@ class Generalisation(NamedTuple):
 
 def generalise_file(vocab_filename: Path,
                     in_filename: Path, out_filename: Path) -> Generalisation:
-    vocab = csv_read(vocab_filename)
-    count, in_v, new_in_v = 0, 0, 0
-    out_rows = []
-    for row in csv_read(in_filename):
-        count += 1
-        general = generalise_to_vocab(vocab, row[-1])
-        if row[-1] in vocab:
-            in_v += 1
-        if general in vocab:
-            new_in_v += 1
-        out_rows.append(row[:-1] + [general])
-    csv_write(out_filename, out_rows)
-    return Generalisation(in_v, new_in_v, count)
+    try:
+        vocab = csv_read(vocab_filename)
+        count, in_v, new_in_v = 0, 0, 0
+        out_rows = []
+        for row in csv_read(in_filename):
+            count += 1
+            general = generalise_to_vocab(vocab, row[-1])
+            if row[-1] in vocab:
+                in_v += 1
+            if general in vocab:
+                new_in_v += 1
+            out_rows.append(row[:-1] + [general])
+        csv_write(out_filename, out_rows)
+        return Generalisation(in_v, new_in_v, count)
+    except Exception as err:
+        err.args += (in_filename,)
+        raise

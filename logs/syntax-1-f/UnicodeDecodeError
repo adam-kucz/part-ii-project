@@ -1,0 +1,832 @@
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xd1 in position 72: invalid continuation byte
+
+Source: data/repos/pylint/pylint/test/functional/invalid_encoded_data.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe9 in position 96: invalid continuation byte
+
+Source: data/repos/pylint/pylint/test/functional/implicit_str_concat_in_sequence_latin1.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xdf in position 62: invalid continuation byte
+
+Source: data/repos/pycodestyle/testsuite/latin-1.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xf1 in position 849: invalid continuation byte
+
+Source: data/repos/pelican-plugins/asciidoc_reader/asciidoc_reader.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xfa in position 104: invalid start byte
+
+Source: data/repos/pip/tests/data/packages/SetupPyLatin1/setup.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xf6 in position 507: invalid start byte
+
+Source: data/repos/cpython/Tools/test2to3/setup.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xfc in position 224: invalid start byte
+
+Source: data/repos/cpython/Tools/i18n/pygettext.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xf0 in position 319: invalid continuation byte
+
+Source: data/repos/cpython/Lib/test/test_source_encoding.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xf6 in position 8: invalid start byte
+
+Source: data/repos/cpython/Lib/test/badsyntax_pep3120.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xf0 in position 59: invalid continuation byte
+
+Source: data/repos/cpython/Lib/test/encoded_modules/module_koi8_r.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe9 in position 87: invalid continuation byte
+
+Source: data/repos/cpython/Lib/test/encoded_modules/module_iso_8859_1.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe4 in position 138: invalid continuation byte
+
+Source: data/repos/cpython/Lib/sqlite3/test/factory.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe4 in position 132: invalid continuation byte
+
+Source: data/repos/cpython/Lib/sqlite3/test/hooks.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe4 in position 123: invalid continuation byte
+
+Source: data/repos/cpython/Lib/sqlite3/test/regression.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe4 in position 184: invalid continuation byte
+
+Source: data/repos/cpython/Lib/sqlite3/test/userfunctions.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe4 in position 120: invalid continuation byte
+
+Source: data/repos/cpython/Lib/sqlite3/test/dbapi.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe4 in position 127: invalid continuation byte
+
+Source: data/repos/cpython/Lib/sqlite3/test/types.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe4 in position 118: invalid continuation byte
+
+Source: data/repos/cpython/Lib/sqlite3/test/transactions.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe7 in position 1428: invalid continuation byte
+
+Source: data/repos/pyston/from_cpython/Lib/heapq.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xdf in position 1311: invalid continuation byte
+
+Source: data/repos/pyston/from_cpython/Lib/shlex.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe4 in position 210: invalid continuation byte
+
+Source: data/repos/pyston/from_cpython/Lib/tarfile.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xf6 in position 61: invalid start byte
+
+Source: data/repos/pyston/from_cpython/Lib/msilib/__init__.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xf6 in position 79: invalid start byte
+
+Source: data/repos/pyston/from_cpython/Lib/encodings/string_escape.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xf6 in position 114: invalid start byte
+
+Source: data/repos/pyston/from_cpython/Lib/encodings/punycode.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe4 in position 932: invalid continuation byte
+
+Source: data/repos/pyston/from_cpython/Lib/ctypes/test/test_unicode.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xc4 in position 23456: invalid continuation byte
+
+Source: data/repos/pyston/from_cpython/Lib/test/test_tarfile.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe5 in position 63963: invalid continuation byte
+
+Source: data/repos/pyston/from_cpython/Lib/test/test_cookielib.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xf6 in position 43521: invalid start byte
+
+Source: data/repos/pyston/from_cpython/Lib/test/test_csv.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xf0 in position 178: invalid continuation byte
+
+Source: data/repos/pyston/from_cpython/Lib/test/test_pep263.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe8 in position 3678: invalid continuation byte
+
+Source: data/repos/pyston/from_cpython/Lib/test/test_marshal.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe1 in position 1965: invalid continuation byte
+
+Source: data/repos/pyston/from_cpython/Lib/test/test_shlex.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe4 in position 114: invalid continuation byte
+
+Source: data/repos/pyston/from_cpython/Lib/sqlite3/dbapi2.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe4 in position 108: invalid continuation byte
+
+Source: data/repos/pyston/from_cpython/Lib/sqlite3/__init__.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe4 in position 138: invalid continuation byte
+
+Source: data/repos/pyston/from_cpython/Lib/sqlite3/test/factory.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe4 in position 132: invalid continuation byte
+
+Source: data/repos/pyston/from_cpython/Lib/sqlite3/test/hooks.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe4 in position 123: invalid continuation byte
+
+Source: data/repos/pyston/from_cpython/Lib/sqlite3/test/regression.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe4 in position 118: invalid continuation byte
+
+Source: data/repos/pyston/from_cpython/Lib/sqlite3/test/py25tests.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe4 in position 184: invalid continuation byte
+
+Source: data/repos/pyston/from_cpython/Lib/sqlite3/test/userfunctions.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe4 in position 120: invalid continuation byte
+
+Source: data/repos/pyston/from_cpython/Lib/sqlite3/test/dbapi.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe4 in position 132: invalid continuation byte
+
+Source: data/repos/pyston/from_cpython/Lib/sqlite3/test/types.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe4 in position 118: invalid continuation byte
+
+Source: data/repos/pyston/from_cpython/Lib/sqlite3/test/transactions.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xf6 in position 68: invalid start byte
+
+Source: data/repos/pyston/from_cpython/Lib/distutils/command/bdist_msi.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0x80 in position 20399: invalid start byte
+
+Source: data/repos/pyston/from_cpython/Lib/plat-mac/macerrors.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xf0 in position 129: invalid continuation byte
+
+Source: data/repos/pyston/test/tests/coding_koi8.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0x80 in position 23: invalid start byte
+
+Source: data/repos/pyston/test/tests/coding_cp1252.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xc4 in position 23456: invalid continuation byte
+
+Source: data/repos/pyston/test/cpython/test_tarfile.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe5 in position 63963: invalid continuation byte
+
+Source: data/repos/pyston/test/cpython/test_cookielib.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xf6 in position 43521: invalid start byte
+
+Source: data/repos/pyston/test/cpython/test_csv.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xf0 in position 178: invalid continuation byte
+
+Source: data/repos/pyston/test/cpython/test_pep263.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe8 in position 3678: invalid continuation byte
+
+Source: data/repos/pyston/test/cpython/test_marshal.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe1 in position 1965: invalid continuation byte
+
+Source: data/repos/pyston/test/cpython/test_shlex.py
+
+
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/usr/lib/python3.6/pathlib.py", line 1197, in read_text
+    return f.read()
+  File "/usr/lib/python3.6/codecs.py", line 321, in decode
+    (result, consumed) = self._buffer_decode(data, self.errors, final)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb1 in position 81: invalid start byte
+
+Source: data/repos/ipython/IPython/core/tests/nonascii.py
+
+

@@ -1,0 +1,2 @@
+for integer, (string, floating) in []:  # type: int, Tuple[str, float]
+    pass

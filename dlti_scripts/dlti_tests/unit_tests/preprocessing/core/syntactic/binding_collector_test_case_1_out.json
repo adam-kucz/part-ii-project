@@ -1,0 +1,24 @@
+{
+  "file_input@(1,0)": {
+    'a': "file_input@(1,0)",
+    'f': "file_input@(1,0)",
+    'g': "file_input@(1,0)",
+    'h': "file_input@(1,0)"
+  },
+  "funcdef@(3,0)": {
+    'x': "funcdef@(3,0)",
+    'a': "funcdef@(3,0)"
+  },
+  "funcdef@(6,0)": {
+    'x': "funcdef@(6,0)",
+    'b': "funcdef@(6,0)",
+    'a': "file_input@(1,0)"
+  },
+  "funcdef@(11,0)": {
+    'a': "funcdef@(11,0)",
+    'i': "funcdef@(11,0)"
+  },
+  "funcdef@(12,4)": {
+    'a': "funcdef@(11,0)"
+  }
+}

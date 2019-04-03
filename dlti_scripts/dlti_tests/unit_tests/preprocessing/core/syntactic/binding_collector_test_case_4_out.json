@@ -1,0 +1,12 @@
+{
+    "file_input@(1,0)": {
+        'typing': "file_input@(1,0)",
+        'asdf': "file_input@(1,0)",
+        'direct': "file_input@(1,0)",
+        'with_typing_module': "file_input@(1,0)",
+        'somelist': "file_input@(1,0)",
+        'element': "file_input@(1,0)",
+        'test_string': "file_input@(1,0)",
+        'char': "file_input@(1,0)"
+    }
+}

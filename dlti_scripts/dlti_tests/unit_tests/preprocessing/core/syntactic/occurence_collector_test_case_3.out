@@ -1,16 +1,40 @@
 {
     (): {
-        'a': {('body', 1, 'targets', 0),
-              ('body', 2, 'value', 'func', 'value'),
-              ('body', 3, 'items', 0, 'context_expr', 'func', 'value')},
-        'b': {('body', 2, 'targets', 0)},
-        'c': {('body', 3, 'body', 0, 'target')},
-        'Path': {('body', 0, 'names', 0),
-                 ('body', 1, 'value', 'func')},
-        'f': {('body', 3, 'items', 0, 'optional_vars'),
-              ('body', 3, 'body', 0, 'value', 'func', 'value')},
-        'a.read_text': {('body', 2, 'value', 'func')},
-        'a.open': {('body', 3, 'items', 0, 'context_expr', 'func')},
-        'f.read': {('body', 3, 'body', 0, 'value', 'func')},
+        'a': {('body', 0, 'targets', 0),
+              ('body', 1, 'body', 3, 'body', 0, 'value'),
+              ('body', 1, 'body', 4, 'body', 0),
+              ('body', 1, 'body', 4, 'body', 1, 'value')},
+        'A': {('body', 1)},
+        'object': {('body', 1, 'bases', 0)},
+    },
+    ('body', 1): {
+        'a': {('body', 1, 'body', 0, 'targets', 0),
+              ('body', 1, 'body', 1, 'value')},
+        'b': {('body', 1, 'body', 1, 'targets', 0)},
+        '__init__': {('body', 1, 'body', 2)},
+        'foo': {('body', 1, 'body', 3)},
+        'boo': {('body', 1, 'body', 4)},
+    },
+    ('body', 1, 'body', 2): {
+        'self': {('body', 1, 'body', 2, 'args', 'args', 0),
+                 ('body', 1, 'body', 2, 'body', 1, 'targets', 0, 'value')},
+        'b': {('body', 1, 'body', 2, 'args', 'args', 1),
+              ('body', 1, 'body', 2, 'body', 0, 'value'),
+              ('body', 1, 'body', 2, 'body', 1, 'value')},
+        'a': {('body', 1, 'body', 2, 'body', 0, 'targets', 0)}
+    },
+    ('body', 1, 'body', 3): {
+        'self': {('body', 1, 'body', 3, 'args', 'args', 0)},
+        'a': {('body', 0, 'targets', 0),
+              ('body', 1, 'body', 3, 'body', 0, 'value'),
+              ('body', 1, 'body', 4, 'body', 0),
+              ('body', 1, 'body', 4, 'body', 1, 'value')}
+    },
+    ('body', 1, 'body', 4): {
+        'self': {('body', 1, 'body', 4, 'args', 'args', 0)},
+        'a': {('body', 0, 'targets', 0),
+              ('body', 1, 'body', 3, 'body', 0, 'value'),
+              ('body', 1, 'body', 4, 'body', 0),
+              ('body', 1, 'body', 4, 'body', 1, 'value')}
     }
 }

@@ -20,6 +20,12 @@ class Kind(Enum):
     Class = auto()
     Comprehension = auto()
 
+    def __str__(self):
+        return {Kind.Module: 'module',
+                Kind.Function: 'function',
+                Kind.Class: 'class',
+                Kind.Comprehension: 'comprehension'}[self]
+
 
 class Namespace(NamedTuple):
     pos: ASTPos
@@ -35,7 +41,8 @@ class ScopeAwareNodeVisitor(ContextAwareNodeVisitor):
         self.current_namespaces = []
 
     def begin_scope(self, kind: Kind):
-        self.current_namespaces.append(Namespace(self.current_pos, kind))
+        self.current_namespaces.append(
+            Namespace(tuple(self.current_pos), kind))
 
     def end_scope(self):
         self.current_namespaces.pop()

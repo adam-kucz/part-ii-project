@@ -1,4 +1,4 @@
 {
-  "in_name": "preprocessing/core/semantic/collectors_test_case_0.in",
-  "out_name": "preprocessing/core/semantic/occurence_collector_test_case_0.out"
+  "in_name": "preprocessing/core/syntactic/collectors_test_case_0.in",
+  "out_name": "preprocessing/core/syntactic/occurence_collector_test_case_0.out"
 }

@@ -1,0 +1,14 @@
+{
+  "file_input@(1,0)": {
+    'ConfigItem': "file_input@(1,0)"
+  },
+  "classdef@(1,0)": {
+    'default_value': "classdef@(1,0)",
+    'comment': "classdef@(1,0)",
+    'to_json': "classdef@(1,0)"
+  },
+  "funcdef@(10,4)": {
+    'self': "funcdef@(10,4)",
+    'json_dict': "funcdef@(10,4)"
+  }
+}

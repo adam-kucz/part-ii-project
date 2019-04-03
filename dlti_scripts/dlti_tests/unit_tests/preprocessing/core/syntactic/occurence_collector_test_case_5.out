@@ -1,0 +1,147 @@
+# unfinished
+{
+    (): {
+        'struct': {
+            ('body', 0, 'names', 0),
+            ('body', 2, 'body', 2, 'body', 4, 'value', 'left', 'left', 'left', 'func', 'value'),
+            ('body', 2, 'body', 2, 'body', 4, 'value', 'right', 'func', 'value')
+        },
+        'pytest': {
+            ('body', 1, 'names', 0),
+            ('body', 2, 'body', 0, 'decorator_list', 0, 'func', 'value'),
+            ('body', 2, 'body', 11, 'body', 7, 'items', 0, 'context_expr', 'func', 'value'),
+            ('body', 2, 'body', 12, 'body', 7, 'items', 0, 'context_expr', 'func', 'value')
+        },
+        'TestSSH1': {('body', 2)},
+        'SystemExit': {
+            ('body', 2, 'body', 11, 'body', 7, 'items', 0, 'context_expr', 'args', 0),
+            ('body', 2, 'body', 12, 'body', 7, 'items', 0, 'context_expr', 'args', 0)},
+        'classmethod': {
+            ('body', 2, 'body', 3, 'decorator_list', 0),
+            ('body', 2, 'body', 4, 'decorator_list', 0)},
+        'len': {
+            ('body', 2, 'body', 2, 'body', 0, 'value', 'left', 'operand', 'left', 'func'),
+            ('body', 2, 'body', 2, 'body', 1, 'value', 'left', 'func'),
+            ('body', 2, 'body', 10, 'body', 9, 'test', 'left', 'func'),
+            ('body', 2, 'body', 11, 'body', 9, 'test', 'left', 'func'),
+            ('body', 2, 'body', 12, 'body', 9, 'test', 'left', 'func')},
+        'object': {('body', 2, 'bases', 0)}
+    },
+    ('body', 2): {
+        'init': {('body', 2, 'body', 0)},
+        '_conf': {('body', 2, 'body', 1)},
+        '_create_ssh1_packet': {('body', 2, 'body', 2)},
+        '_server_key': {('body', 2, 'body', 3)},
+        '_host_key': {('body', 2, 'body', 4)},
+        '_pkm_payload': {('body', 2, 'body', 5)},
+        'test_crc32': {('body', 2, 'body', 6)},
+        'test_fingerprint': {('body', 2, 'body', 7)},
+        'test_pkm_read': {('body', 2, 'body', 8)},
+        'test_pkm_payload': {('body', 2, 'body', 9)},
+        'test_ssh1_server_simple': {('body', 2, 'body', 10)},
+        'test_ssh1_server_invalid_first_packet': {('body', 2, 'body', 11)},
+        'test_ssh1_server_invalid_checksum': {('body', 2, 'body', 12)},
+        'pytest': {
+            ('body', 1, 'names', 0),
+            ('body', 2, 'body', 0, 'decorator_list', 0, 'func', 'value'),
+            ('body', 2, 'body', 11, 'body', 7, 'items', 0, 'context_expr', 'func', 'value'),
+            ('body', 2, 'body', 12, 'body', 7, 'items', 0, 'context_expr', 'func', 'value')
+        },
+        'classmethod': {
+            ('body', 2, 'body', 3, 'decorator_list', 0),
+            ('body', 2, 'body', 4, 'decorator_list', 0)},
+    },
+    ('body', 2, 'body', 0): {
+        'self': {
+            ('body', 2, 'body', 0, 'args', 'args', 0),
+            ('body', 2, 'body', 0, 'body', 0, 'targets', 0, 'value'),
+            ('body', 2, 'body', 0, 'body', 1, 'targets', 0, 'value'),
+            ('body', 2, 'body', 0, 'body', 2, 'targets', 0, 'value'),
+            ('body', 2, 'body', 0, 'body', 3, 'targets', 0, 'value'),
+            ('body', 2, 'body', 0, 'body', 4, 'targets', 0, 'value'),
+            ('body', 2, 'body', 0, 'body', 5, 'targets', 0, 'value'),
+        },
+        'ssh_audit': {}
+    },
+    ('body', 2, 'body', 1): {
+        'self': {},
+        'conf': {}
+    },
+    ('body', 2, 'body', 2): {
+        'self': {},
+        'payload': {},
+        'valid_crc': {},
+        'padding': {},
+        'plen': {},
+        'pad_bytes': {},
+        'cksum': {},
+        'data': {}
+    },
+    ('body', 2, 'body', 3): {
+        'cls': {}
+    },
+    ('body', 2, 'body', 4): {
+        'cls': {}
+    },
+    ('body', 2, 'body', 5): {
+        'self': {},
+        'w': {},
+        'b': {},
+        'e': {},
+        'm': {}
+    },
+    ('body', 2, 'body', 6): {
+        'self': {}
+    },
+    ('body', 2, 'body', 7): {
+        'self': {},
+        'b': {},
+        'e': {},
+        'm': {},
+        'fpd': {},
+        'fp': {}
+    },
+    ('body', 2, 'body', 8): {
+        'self': {},
+        'pkm': {},
+        'b': {},
+        'e': {},
+        'm': {},
+        'fp': {}
+    },
+    ('body', 2, 'body', 9): {
+        'self': {},
+        'cookie': {},
+        'skey': {},
+        'hkey': {},
+        'pflags': {},
+        'cmask': {},
+        'amask': {},
+        'pkm1': {},
+        'pkm2': {}
+    },
+    ('body', 2, 'body', 10): {
+        'self': {},
+        'output_spy': {},
+        'virtual_socket': {},
+        'vsocket': {},
+        'w': {},
+        'lines': {}
+    },
+    ('body', 2, 'body', 11): {
+        'self': {},
+        'output_spy': {},
+        'virtual_socket': {},
+        'vsocket': {},
+        'w': {},
+        'lines': {}
+    },
+    ('body', 2, 'body', 12): {
+        'self': {},
+        'output_spy': {},
+        'virtual_socket': {},
+        'vsocket': {},
+        'w': {},
+        'lines': {}
+    },
+}

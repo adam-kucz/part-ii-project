@@ -2,5 +2,5 @@
   "in_name": "preprocessing/core/test_file_jedi",
   "out_name": "preprocessing/core/context/extract_test_case_3_out.csv",
   "context_size": 1,
-  "fun_as_ret": true
+  "func_as_ret": true
 }

@@ -1,71 +1,77 @@
 import typing as t
-from typing import Iterable, List, Optional, Sequence, Union
+from typing import Iterable, List, Optional, Union
 # typed_ast module is generated in a weird, pylint-incompatible, way
 # pylint: disable=no-name-in-module
 from typed_ast.ast3 import (
-    AnnAssign, arg, Assign, AST, AsyncFunctionDef, AsyncFor, AsyncWith,
-    FunctionDef, For, Tuple, With)
+    alias, AnnAssign, arg, Assign, AST, AsyncFunctionDef, AsyncFor, AsyncWith,
+    Attribute, ClassDef, FunctionDef, For, keyword, Name, Tuple, With)
 
 from pytrie import Trie
 
-from ..ast_util import ASTPos
-from .ctx_aware_ast import ContextAwareNodeVisitor, ContextAwareNodeTransformer
+from ..ast_util import ASTPos, get_attribute_name
+from .ctx_aware_ast import ContextAwareNodeTransformer, ContextAwareNodeVisitor
 from ..type_representation import (
-    FunctionType, GenericType, is_tuple, Kind, Type, UNANNOTATED)
+    FunctionType, TupleType, Kind, Type, UNANNOTATED)
 from ...util import bind
 
-__all__ = ['PosTypeCollector', 'AnonymisingTypeCollector']
+__all__ = ['AnonymisingTypeCollector']
 
 
-def to_list(typ: Optional[Type]):
-    """
-    Converts optional type to a list of types
-
-    List is empty if type was None,
-    if type was a tuple then its arguments are returned,
-    otherwise one-element containing the type is returned
-    """
-    if typ is None:
-        return []
-    if isinstance(typ, GenericType) and is_tuple(typ):
-        return typ.args
-    return [typ]
+def get_name(node: AST) -> str:
+    if isinstance(node, Name):
+        return node.id
+    if isinstance(node, (arg, keyword)):
+        return node.arg
+    if isinstance(node, alias):
+        return node.asname or node.name
+    if isinstance(node, (FunctionDef, AsyncFunctionDef, ClassDef)):
+        return node.name
+    if isinstance(node, Attribute):
+        name = get_attribute_name(node)
+        if name:
+            return name
+    raise ValueError("AST node of type {} has no name".format(type(node)),
+                     node)
 
 
 class PosTypeCollector(ContextAwareNodeVisitor):
-    """Collects and saves all (pos, type) pairs"""
-    type_locs: Trie  # Mapping[ASTPos, Type]
-    fun_as_ret: bool
+    """Collects and saves all types and their identifier positions in AST"""
+    type_locs: t.Tuple[str, ASTPos, Type]
+    func_as_ret: bool
 
-    def __init__(self, fun_as_ret: bool = True) -> None:
+    def __init__(self, func_as_ret: bool = True) -> None:
         super().__init__()
-        self.type_locs = Trie()
-        self.fun_as_ret = fun_as_ret
+        self.type_locs = []
+        self.func_as_ret = func_as_ret
 
     def add_type(self, node: AST, typ: Optional[Type]) -> None:
-        """Saves type mapping if typ present"""
+        """Saves type and new position if """
         if node and typ and typ.kind != Kind.EMPTY:
-            self.type_locs[node.tree_path] = typ  # type: ignore
+            self.type_locs.append((get_name(node), node.tree_path, typ))
 
-    def add_types(self, nodes: Sequence[AST], typs: Sequence[Type]) -> None:
+    def add_expression_types(self, node: AST, typ: Type) -> None:
         """Saves type mapping if typ present"""
-        if len(nodes) == len(typs):
-            for node, typ in zip(nodes, typs):  # type: AST, Type
-                self.add_type(node, typ)
+        if (isinstance(typ, TupleType) and typ.r
+                and isinstance(node, Tuple)
+                and len(typ.args) == len(node.elts)):
+            for child_node, child_type in zip(node.elts, typ.args):
+                self.add_expression_types(child_node, child_type)
+        else:
+            self.add_type(node, typ)
 
-    def visit(self, node):
+    def visit(self, node: AST) -> Optional[AST]:
         node.tree_path = tuple(self.current_pos)
         super().visit(node)
 
-    # pylint: disable=invalid-name
     def visit_FunctionDef(  # pylint: disable=invalid-name
-            self,
-            node: Union[FunctionDef, AsyncFunctionDef]) -> None:
+            self, node: Union[FunctionDef, AsyncFunctionDef])\
+            -> Union[FunctionDef, AsyncFunctionDef]:
         """Add the function definition node to the list"""
-        self.generic_visit(node)
-        if self.fun_as_ret:
+        if self.func_as_ret:
             typ = bind(node.returns, Type.from_ast)
         else:
+            # TODO: handle *args and **kwargs
+            # priority: low, I mostly use func_as_ret = True
             args: Iterable[Optional[Type]]\
                 = (bind(arg.annotation, Type.from_ast)
                    for arg in node.args.args)
@@ -73,57 +79,60 @@ class PosTypeCollector(ContextAwareNodeVisitor):
             ret_type: Type = bind(node.returns, Type.from_ast) or UNANNOTATED
             typ = FunctionType(arg_types, ret_type)
         self.add_type(node, typ)
+        self.generic_visit(node)
 
     # pylint: disable=invalid-name
-    def visit_AsyncFunctionDef(self, node: AsyncFunctionDef) -> None:
+    def visit_AsyncFunctionDef(self, node: AsyncFunctionDef)\
+            -> AsyncFunctionDef:
         """Add the function definition node to the list"""
         self.visit_FunctionDef(node)
 
+    # TODO: treat implicit type Tuple properly
+    # priority: low (nontrivial, rare edge case only seen in incorrect code)
     # pylint: disable=invalid-name
-    def visit_For(self, node: Union[For, AsyncFor]) -> None:
+    def visit_For(self, node: Union[For, AsyncFor]) -> Union[For, AsyncFor]:
         """Add for variable if type comment present"""
         self.generic_visit(node)
-        if isinstance(node.target, Tuple):
-            types = to_list(bind(node.type_comment, Type.from_type_comment))
-            self.add_types(node.target.elts, types)
-        else:
-            possible_type = bind(node.type_comment, Type.from_type_comment)
-            self.add_type(node.target, possible_type)
+        possible_type = bind(node.type_comment, Type.from_type_comment)
+        self.add_expression_types(node.target, possible_type)
 
     # pylint: disable=invalid-name
-    def visit_AsyncFor(self, node: AsyncFor) -> None:
+    def visit_AsyncFor(self, node: AsyncFor) -> AsyncFor:
         """Add for variable if type comment present"""
         self.visit_For(node)
 
     # pylint: disable=invalid-name
-    def visit_With(self, node: Union[With, AsyncWith]) -> None:
+    def visit_With(self, node: Union[With, AsyncWith])\
+            -> Union[With, AsyncWith]:
         """Add with variables if type comment present"""
         self.generic_visit(node)
-        self.add_types([item.optional_vars
-                        for item in node.items
-                        if item.optional_vars],
-                       to_list(bind(node.type_comment,
-                                    Type.from_type_comment)))
+        named = tuple(filter(lambda n: n.optional_vars, node.items))
+        # TODO: hacky, fix
+        self.add_expression_types(
+            Tuple(elts=[item.optional_vars for item in named]),
+            bind(node.type_comment, Type.from_type_comment))
 
     # pylint: disable=invalid-name
-    def visit_AsyncWith(self, node: AsyncWith) -> None:
+    def visit_AsyncWith(self, node: AsyncWith) -> AsyncWith:
         """Add with variables if type comment present"""
         self.visit_With(node)
 
     # pylint: disable=invalid-name
-    def visit_Assign(self, node: Assign) -> None:
+    def visit_Assign(self, node: Assign) -> Assign:
         """Add the type from assignment comment to the list"""
         self.generic_visit(node)
-        types = to_list(bind(node.type_comment, Type.from_type_comment))
-        self.add_types(node.targets, types)
+        typ = bind(node.type_comment, Type.from_type_comment)
+        target = (node.targets[0] if len(node.targets) == 1
+                  else Tuple(elts=node.targets))
+        self.add_expression_types(target, typ)
 
-    def visit_arg(self, node: arg) -> None:
+    def visit_arg(self, node: arg) -> arg:
         """Add the function argument to type list"""
         self.generic_visit(node)
         self.add_type(node, bind(node.annotation, Type.from_ast))
 
     # pylint: disable=invalid-name
-    def visit_AnnAssign(self, node: AnnAssign) -> None:
+    def visit_AnnAssign(self, node: AnnAssign) -> Optional[Assign]:
         """Add the function argument to type list"""
         self.generic_visit(node)
         self.add_type(node.target, Type.from_ast(node.annotation))
@@ -131,39 +140,48 @@ class PosTypeCollector(ContextAwareNodeVisitor):
 
 class AnonymisingTypeCollector(ContextAwareNodeTransformer):
     """Collects and saves all types removing them from AST"""
-    type_locs: List[t.Tuple[ASTPos, Type, Optional[ASTPos]]]
-    fun_as_ret: bool
+    type_locs: List[t.Tuple[str, ASTPos, Type]]
+    old_to_new_pos_map: Trie  # Mapping[ASTPos, ASTPos]
+    func_as_ret: bool
 
-    def __init__(self, fun_as_ret: bool = True) -> None:
+    def __init__(self, func_as_ret: bool = True) -> None:
         super().__init__()
         self.type_locs = []
-        self.fun_as_ret = fun_as_ret
+        self.old_to_new_pos_map = Trie()
+        self.func_as_ret = func_as_ret
 
-    def add_type(self, node: AST,
-                 typ: Optional[Type], new_loc: Optional[ASTPos]) -> None:
+    def old_to_new_pos(self, old_pos: ASTPos) -> Optional[ASTPos]:
+        if 'annotation' in old_pos or 'returns' in old_pos:
+            return None
+        return self.old_to_new_pos_map[old_pos]
+
+    def add_type(self, node: AST, typ: Optional[Type]) -> None:
         """Saves type and new position if """
         if node and typ and typ.kind != Kind.EMPTY:
-            new_loc = tuple(new_loc) if new_loc is not None else None
-            self.type_locs.append((node.tree_path, typ, new_loc))
+            self.type_locs.append((get_name(node), node.tree_path, typ))
 
-    def add_types(self, nodes: Sequence[AST], typs: Sequence[Type],
-                  new_locs: Iterable[Optional[ASTPos]]) -> None:
+    def add_expression_types(self, node: AST, typ: Type) -> None:
         """Saves type mapping if typ present"""
-        if len(nodes) == len(typs):
-            for args in zip(nodes, typs, new_locs):\
-                    # type: AST, Type, Optional[ASTPos]
-                self.add_type(*args)
+        if (isinstance(typ, TupleType) and typ.regular
+                and isinstance(node, Tuple)
+                and len(typ.args) == len(node.elts)):
+            for child_node, child_type in zip(node.elts, typ.args):
+                self.add_expression_types(child_node, child_type)
+        else:
+            self.add_type(node, typ)
 
     def visit(self, node: AST) -> Optional[AST]:
+        # TODO: think if it would be better to do it with a function
+        # instead of just memoizing the whole AST
         node.tree_path = tuple(self.current_pos)
-        node.new_tree_path = tuple(self.current_new_pos)
+        self.old_to_new_pos_map[self.current_pos] = tuple(self.current_new_pos)
         return super().visit(node)
 
     def visit_FunctionDef(  # pylint: disable=invalid-name
             self, node: Union[FunctionDef, AsyncFunctionDef])\
             -> Union[FunctionDef, AsyncFunctionDef]:
         """Add the function definition node to the list"""
-        if self.fun_as_ret:
+        if self.func_as_ret:
             typ = bind(node.returns, Type.from_ast)
         else:
             # TODO: handle *args and **kwargs
@@ -174,7 +192,7 @@ class AnonymisingTypeCollector(ContextAwareNodeTransformer):
             ret_type: Type = bind(node.returns, Type.from_ast) or UNANNOTATED
             typ = FunctionType(arg_types, ret_type)
         node.returns = None
-        self.add_type(node, typ, node.new_tree_path)
+        self.add_type(node, typ)
         return self.generic_visit(node)
 
     # pylint: disable=invalid-name
@@ -183,18 +201,14 @@ class AnonymisingTypeCollector(ContextAwareNodeTransformer):
         """Add the function definition node to the list"""
         return self.visit_FunctionDef(node)
 
+    # TODO: treat implicit type Tuple properly
+    # priority: low (nontrivial, rare edge case only seen in incorrect code)
     # pylint: disable=invalid-name
     def visit_For(self, node: Union[For, AsyncFor]) -> Union[For, AsyncFor]:
         """Add for variable if type comment present"""
         self.generic_visit(node)
-        if isinstance(node.target, Tuple):
-            types = to_list(bind(node.type_comment, Type.from_type_comment))
-            self.add_types(node.target.elts, types,
-                           map(lambda n: n.new_tree_path, node.target.elts))
-        else:
-            possible_type = bind(node.type_comment, Type.from_type_comment)
-            self.add_type(node.target, possible_type,
-                          node.target.new_tree_path)
+        possible_type = bind(node.type_comment, Type.from_type_comment)
+        self.add_expression_types(node.target, possible_type)
         node.type_comment = None
         return node
 
@@ -209,10 +223,10 @@ class AnonymisingTypeCollector(ContextAwareNodeTransformer):
         """Add with variables if type comment present"""
         self.generic_visit(node)
         named = tuple(filter(lambda n: n.optional_vars, node.items))
-        self.add_types([item.optional_vars for item in named],
-                       to_list(bind(node.type_comment,
-                                    Type.from_type_comment)),
-                       (item.optional_vars.new_tree_path for item in named))
+        # TODO: hacky, fix
+        self.add_expression_types(
+            Tuple(elts=[item.optional_vars for item in named]),
+            bind(node.type_comment, Type.from_type_comment))
         node.type_comment = None
         return node
 
@@ -225,31 +239,32 @@ class AnonymisingTypeCollector(ContextAwareNodeTransformer):
     def visit_Assign(self, node: Assign) -> Assign:
         """Add the type from assignment comment to the list"""
         self.generic_visit(node)
-        types = to_list(bind(node.type_comment, Type.from_type_comment))
-        self.add_types(node.targets, types,
-                       map(lambda n: n.new_tree_path, node.targets))
+        typ = bind(node.type_comment, Type.from_type_comment)
+        target = (node.targets[0] if len(node.targets) == 1
+                  else Tuple(elts=node.targets))
+        self.add_expression_types(target, typ)
         node.type_comment = None
         return node
 
     def visit_arg(self, node: arg) -> arg:
         """Add the function argument to type list"""
         self.generic_visit(node)
-        self.add_type(node, bind(node.annotation, Type.from_ast),
-                      node.new_tree_path)
+        self.add_type(node, bind(node.annotation, Type.from_ast))
         node.annotation = None
         return node
 
     # pylint: disable=invalid-name
     def visit_AnnAssign(self, node: AnnAssign) -> Optional[Assign]:
         """Add the function argument to type list"""
-        if node.value:
-            new_node = Assign(targets=[node.target], value=node.value)
-            new_loc = self.current_new_pos + ['targets', 0]
-        else:
-            new_node = None
-            new_loc = None
+        new_node\
+            = (Assign(targets=[node.target], value=node.value) if node.value
+               else None)
         self.generic_visit(node)
-        self.add_type(node.target, Type.from_ast(node.annotation), new_loc)
+        self.add_type(node.target, Type.from_ast(node.annotation))
         if new_node:
             self.generic_visit(new_node)
+            self.old_to_new_pos_map[self.current_pos + ['target']]\
+                = tuple(self.current_new_pos + ['targets', 0])
+        else:
+            self.old_to_new_pos_map[self.current_pos] = None
         return new_node

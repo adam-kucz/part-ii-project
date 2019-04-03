@@ -1,17 +1,40 @@
 """Utility functions for python AST manipulation"""
 import ast
 import inspect
-from typing import Sequence, Union
+from typing import Optional, Sequence, Union
 
-# typed_ast module is generated in a weird, pylint-incompatible, way
+# import astor
 import typed_ast.ast3 as t_ast3
 
-__all__ = ['ASTPos', 'get_node', 'to_different_ast']
+from ..util import bind
+
+__all__ = ['AccessError', 'ASTPos', 'get_attribute_name',
+           'get_node', 'to_different_ast']
 
 #: position in python AST, either from ast or typed_ast
 ASTPos = Sequence[Union[str, int]]
 
-AST = Union[ast.AST, t_ast3.AST]
+# typed_ast module is generated in a nonstandard, pylint-incompatible, way
+AST = Union[ast.AST, t_ast3.AST]  # pylint: disable=no-member
+
+
+class AccessError(NameError):
+    def __init__(self, name: str, pos: ASTPos):
+        self.name = name
+        self.pos = pos
+        super().__init__("Variable {} accessed without definition at {}"
+                         .format(name, pos), self.name, self.pos)
+
+
+def get_attribute_name(node: AST) -> Optional[str]:
+    # pylint: disable=no-member
+    if isinstance(node, (ast.Name, t_ast3.Name)):
+        return node.id
+    # pylint: disable=no-member
+    if isinstance(node, (ast.Attribute, t_ast3.Name)):
+        return bind(get_attribute_name(node.value),
+                    lambda base: base + '.' + node.attr)
+    return None
 
 
 def get_node(node: AST, pos: ASTPos) -> AST:
@@ -25,7 +48,7 @@ def get_node(node: AST, pos: ASTPos) -> AST:
         child = getattr(node, pos[0])
     except AttributeError as err:
         __printerr(pos, node, err)
-        raise err
+        raise
     if isinstance(child, list):
         if isinstance(pos[1], str):
             return None
@@ -34,15 +57,15 @@ def get_node(node: AST, pos: ASTPos) -> AST:
             return get_node(child[i], pos[2:])
         except AttributeError as err:
             __printerr(pos, node, err)
-            raise err
+            raise
         except IndexError as err:
             __printerr(pos, node, err)
-            raise err
+            raise
     try:
         return get_node(child, pos[1:])
     except AttributeError as err:
         __printerr(pos, node, err)
-        raise err
+        raise
 
 
 def to_different_ast(node: AST, target=ast):
@@ -66,9 +89,9 @@ def to_different_ast(node: AST, target=ast):
                 new_val = [to_different_ast(v, target)
                            if isinstance(v, src.AST) else v
                            for v in value]
-            except AttributeError as err:
+            except AttributeError:
                 print("Trying to convert {} from node {}".format(value, node))
-                raise err
+                raise
         elif isinstance(value, src.AST):
             new_val = to_different_ast(value, target)
         else:
@@ -78,6 +101,8 @@ def to_different_ast(node: AST, target=ast):
 
 
 def __printerr(pos: ASTPos, node: AST, err: Exception) -> None:
-    dump = (ast if isinstance(node, ast.AST) else t_ast3).dump(node)
-    print("When trying to get element at {} got {}, in node\n{}\n"
-          .format(pos, err, dump))
+    err.args += (pos,)
+    # dump = astor.dump_tree(node if isinstance(node, ast.AST)
+    #                        else to_different_ast(node), indentation=' ' * 2)
+    # print("When trying to get element at {} got {}, in node\n{}\n"
+    #       .format(pos, err, dump))

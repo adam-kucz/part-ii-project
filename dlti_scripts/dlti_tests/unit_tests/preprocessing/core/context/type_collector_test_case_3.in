@@ -1,0 +1,12 @@
+from typing import Tuple
+
+class A:
+    def __enter__(self):
+        return 1, 'abc'
+
+    def __exit__(self, *args, **kwargs):
+        pass
+
+
+with A() as (a, b), A() as c:  # type: Tuple[Tuple[int, str], Tuple[int, str]]
+    print(a, b)

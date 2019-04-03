@@ -1,0 +1,5 @@
+inconsistent use of tabs and spaces in indentation (<unknown>, line 4), data/repos/pyston/test/tests/tabs_and_spaces.py
+
+inconsistent use of tabs and spaces in indentation (<unknown>, line 6), data/repos/pyston/test/tests/super2.py
+
+inconsistent use of tabs and spaces in indentation (<unknown>, line 49), data/repos/pyston/test/tests/sys_current_frames.py

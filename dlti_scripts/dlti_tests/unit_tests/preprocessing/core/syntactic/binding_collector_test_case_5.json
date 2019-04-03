@@ -1,0 +1,4 @@
+{
+  "in_name": "preprocessing/core/test_file_allennlp",
+  "out_name": "preprocessing/core/syntactic/binding_collector_test_case_5_out.json"
+}

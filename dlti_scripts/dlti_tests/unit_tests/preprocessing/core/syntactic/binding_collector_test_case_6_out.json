@@ -1,0 +1,107 @@
+{
+    "file_input@(3,0)": {
+        'struct': "file_input@(3,0)",
+        'pytest': "file_input@(3,0)",
+        'TestSSH1': "file_input@(3,0)"
+    },
+    "classdef@(8,0)": {
+        'init': "classdef@(8,0)",
+        '_conf': "classdef@(8,0)",
+        '_create_ssh1_packet': "classdef@(8,0)",
+        '_server_key': "classdef@(8,0)",
+        '_host_key': "classdef@(8,0)",
+        '_pkm_payload': "classdef@(8,0)",
+        'test_crc32': "classdef@(8,0)",
+        'test_fingerprint': "classdef@(8,0)",
+        'test_pkm_read': "classdef@(8,0)",
+        'test_pkm_payload': "classdef@(8,0)",
+        'test_ssh1_server_simple': "classdef@(8,0)",
+        'test_ssh1_server_invalid_first_packet': "classdef@(8,0)",
+        'test_ssh1_server_invalid_checksum': "classdef@(8,0)",
+    },
+    "funcdef@(10,1)": {
+        'self': "funcdef@(10,1)",
+        'ssh_audit': "funcdef@(10,1)"
+    },
+    "funcdef@(18,1)": {
+        'self': "funcdef@(18,1)",
+        'conf': "funcdef@(18,1)"
+    },
+    "funcdef@(27,1)": {
+        'self': "funcdef@(27,1)",
+        'payload': "funcdef@(27,1)",
+        'valid_crc': "funcdef@(27,1)",
+        'padding': "funcdef@(27,1)",
+        'plen': "funcdef@(27,1)",
+        'pad_bytes': "funcdef@(27,1)",
+        'cksum': "funcdef@(27,1)",
+        'data': "funcdef@(27,1)"
+    },
+    "funcdef@(36,1)": {
+        'cls': "funcdef@(36,1)"
+    },
+    "funcdef@(40,1)": {
+        'cls': "funcdef@(40,1)"
+    },
+    "funcdef@(43,1)": {
+        'self': "funcdef@(43,1)",
+        'w': "funcdef@(43,1)",
+        'b': "funcdef@(43,1)",
+        'e': "funcdef@(43,1)",
+        'm': "funcdef@(43,1)"
+    },
+    "funcdef@(55,1)": {
+        'self': "funcdef@(55,1)"
+    },
+    "funcdef@(59,1)": {
+        'self': "funcdef@(59,1)",
+        'b': "funcdef@(59,1)",
+        'e': "funcdef@(59,1)",
+        'm': "funcdef@(59,1)",
+        'fpd': "funcdef@(59,1)",
+        'fp': "funcdef@(59,1)"
+    },
+    "funcdef@(69,1)": {
+        'self': "funcdef@(69,1)",
+        'pkm': "funcdef@(69,1)",
+        'b': "funcdef@(69,1)",
+        'e': "funcdef@(69,1)",
+        'm': "funcdef@(69,1)",
+        'fp': "funcdef@(69,1)"
+    },
+    "funcdef@(90,1)": {
+        'self': "funcdef@(90,1)",
+        'cookie': "funcdef@(90,1)",
+        'skey': "funcdef@(90,1)",
+        'hkey': "funcdef@(90,1)",
+        'pflags': "funcdef@(90,1)",
+        'cmask': "funcdef@(90,1)",
+        'amask': "funcdef@(90,1)",
+        'pkm1': "funcdef@(90,1)",
+        'pkm2': "funcdef@(90,1)"
+    },
+    "funcdef@(101,1)": {
+        'self': "funcdef@(101,1)",
+        'output_spy': "funcdef@(101,1)",
+        'virtual_socket': "funcdef@(101,1)",
+        'vsocket': "funcdef@(101,1)",
+        'w': "funcdef@(101,1)",
+        'lines': "funcdef@(101,1)"
+    },
+    "funcdef@(113,1)": {
+        'self': "funcdef@(113,1)",
+        'output_spy': "funcdef@(113,1)",
+        'virtual_socket': "funcdef@(113,1)",
+        'vsocket': "funcdef@(113,1)",
+        'w': "funcdef@(113,1)",
+        'lines': "funcdef@(113,1)"
+    },
+    "funcdef@(127,1)": {
+        'self': "funcdef@(127,1)",
+        'output_spy': "funcdef@(127,1)",
+        'virtual_socket': "funcdef@(127,1)",
+        'vsocket': "funcdef@(127,1)",
+        'w': "funcdef@(127,1)",
+        'lines': "funcdef@(127,1)"
+    }
+}

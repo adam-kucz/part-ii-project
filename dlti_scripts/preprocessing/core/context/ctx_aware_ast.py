@@ -48,6 +48,7 @@ class ContextAwareNodeVisitor(NodeVisitor):
                         ("Fields in position should be str or int, "
                          "not {} (field: {}, in {})")
                         .format(type(field), field, pos))
+            value.tree_parent = node
             self._unsafe_visit(value)
             for _ in pos:
                 self.current_pos.pop()
@@ -81,6 +82,7 @@ class ContextAwareNodeTransformer(NodeTransformer,
                         if value is None:
                             continue
                         elif not isinstance(value, AST):
+                            value.tree_parent = node
                             new_values.extend(value)
                             continue
                     new_values.append(value)
@@ -90,6 +92,7 @@ class ContextAwareNodeTransformer(NodeTransformer,
                 if new_node is None:
                     delattr(node, field)
                 else:
+                    new_node.tree_parent = node
                     setattr(node, field, new_node)
             self.current_pos.pop()
             self.current_new_pos.pop()

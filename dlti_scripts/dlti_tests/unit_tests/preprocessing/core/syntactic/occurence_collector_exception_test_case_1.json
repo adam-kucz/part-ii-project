@@ -1,0 +1,5 @@
+{
+  "in_name": "preprocessing/core/test_file_allennlp",
+  "throws": "ValueError",
+  "regex": "Variable NamedTuple accessed without definition at \\('body', 0, 'bases', 0\\)"
+}

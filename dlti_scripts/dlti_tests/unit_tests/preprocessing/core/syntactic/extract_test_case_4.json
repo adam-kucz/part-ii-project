@@ -1,0 +1,6 @@
+{
+  "in_name": "preprocessing/core/test_file_mypy",
+  "out_name": "preprocessing/core/syntactic/extract_test_case_4_out.csv",
+  "context_size": 3,
+  "func_as_ret": true
+}

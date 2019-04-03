@@ -7,6 +7,7 @@
           ('body', 2, 'value', 'left', 'right')},
     'c': {('body', 1, 'targets', 0),
           ('body', 2, 'target'),
-          ('body', 2, 'value', 'right')}
+          ('body', 2, 'value', 'right')},
+    'int': {('body', 2, 'annotation')}
   }
 }

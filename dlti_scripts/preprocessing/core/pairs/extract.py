@@ -5,10 +5,11 @@ from pathlib import Path
 from typing import List, IO  # noqa: F401
 import typing as t
 
-import typed_ast.ast3 as ast3
+import parso
+from parso.python.tree import Module
 
 from ..type_representation import Type
-from .type_collector import TypeCollector, TypeCollectorFunAsRet
+from ..type_collector import TypeCollector
 
 __all__ = ['get_type_identfiers', 'extract_type_identifiers']
 
@@ -22,19 +23,18 @@ def get_type_identfiers(
     :param filestring: str: string representing code to extract types from
     :returns: list of tuples (name, type) for variables and identifiers
     """
-    ast: ast3.AST = ast3.parse(filestring)  # pylint: disable=no-member
-    collector: TypeCollector\
-        = TypeCollector() if not func_as_ret else TypeCollectorFunAsRet()
-    collector.visit(ast)
-    return collector.defs
+    tree: Module = parso.parse(filestring)
+    collector: TypeCollector = TypeCollector(func_as_ret)
+    collector.visit(tree)
+    return [(name.value, typ) for name, typ in collector.types]
 
 
 def extract_type_identifiers(in_filename: Path,
                              out_filename: Path,
-                             fun_as_ret: bool = False) -> None:
+                             func_as_ret: bool = False) -> None:
     """Extract type annotations from input file to output file"""
     types: List[t.Tuple[str, Type]]\
-        = get_type_identfiers(in_filename.read_text(), fun_as_ret)
+        = get_type_identfiers(in_filename.read_text(), func_as_ret)
     if not out_filename.parent.exists():
         out_filename.parent.mkdir(parents=True)
     with out_filename.open('w', newline='') as outfile:  # type: IO

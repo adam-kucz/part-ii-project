@@ -1,0 +1,6 @@
+{
+  "in_name": "preprocessing/core/syntactic/collectors_test_case_0.in",
+  "out_name": "preprocessing/core/syntactic/extract_test_case_0_out.csv",
+  "context_size": 0,
+  "func_as_ret": true
+}

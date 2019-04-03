@@ -9,8 +9,6 @@
                  ('body', 1, 'value', 'func')},
         'f': {('body', 3, 'items', 0, 'optional_vars'),
               ('body', 3, 'body', 0, 'value', 'func', 'value')},
-        'a.read_text': {('body', 2, 'value', 'func')},
-        'a.open': {('body', 3, 'items', 0, 'context_expr', 'func')},
-        'f.read': {('body', 3, 'body', 0, 'value', 'func')},
+        'str': {('body', 3, 'body', 0, 'annotation')},
     }
 }

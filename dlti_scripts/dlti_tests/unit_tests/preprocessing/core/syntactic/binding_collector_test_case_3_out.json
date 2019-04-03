@@ -1,0 +1,25 @@
+{
+  "file_input@(1,0)": {
+    'a': "file_input@(1,0)",
+    'A': "file_input@(1,0)"
+  },
+  "classdef@(2,0)": {
+    'a': "classdef@(2,0)",
+    'b': "classdef@(2,0)",
+    '__init__': "classdef@(2,0)",
+    'foo': "classdef@(2,0)",
+    'boo': "classdef@(2,0)"
+  },
+  "funcdef@(6,4)": {
+    'self': "funcdef@(6,4)",
+    'a': "funcdef@(6,4)",
+    'b': "funcdef@(6,4)"
+  },
+  "funcdef@(10,4)": {
+    'self': "funcdef@(10,4)",
+  },
+  "funcdef@(13,4)": {
+    'self': "funcdef@(13,4)",
+    'a': "file_input@(1,0)"
+  }
+}

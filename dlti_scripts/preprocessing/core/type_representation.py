@@ -122,6 +122,7 @@ class Type(Generic[T], metaclass=ABCMeta):
 
         Assumes implicit toplevel tuple if encountered list
         """
+        # TODO: fix hack, does not work 100% of the time
         ast: AST = ast3.parse(type_comment, mode='eval')
         if isinstance(ast, Expression) and isinstance(ast.body, Tuple):
             return Type.from_str('Tuple[' + type_comment + ']')
@@ -258,6 +259,10 @@ class TupleType(GenericType[T]):
         self.empty = empty
         self.hom_type = hom_type
 
+    @property
+    def regular(self: 'TupleType[T]') -> bool:
+        return not self.empty and self.hom_type is None
+
     def __str__(self: 'TupleType[T]') -> str:
         if self.empty:
             return "Tuple[()]"
@@ -386,12 +391,6 @@ class NestedType(Type[T]):
             if module and typ:
                 return NestedType(module, typ)
         return None
-
-
-def is_tuple(typ: GenericType[T]) -> bool:
-    """Returns true if and only if the argument is a tuple type"""
-    return isinstance(typ.generic_typ, SimpleType) and\
-        typ.generic_typ.typ == 'Tuple'
 
 
 NONE_TYPE: Type[None] = SimpleType('None')

@@ -1,10 +1,15 @@
+a = 0
 class A(object):
-      a = 1
-      b = a
+    a = 1
+    b = a
 
-      def __init__(self, b):
-          a = b
-          self.a = b
+    def __init__(self, b):
+        a = b
+        self.a = b
 
-      def foo(self):
-          return self.a
+    def foo(self):
+        return a
+      
+    def boo(self):
+        global a
+        return a

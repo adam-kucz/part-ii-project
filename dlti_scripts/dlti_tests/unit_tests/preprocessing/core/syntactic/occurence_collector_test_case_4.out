@@ -1,0 +1,59 @@
+{
+    (): {
+        'Union': {('body', 0, 'names', 0)},
+        'List': {('body', 0, 'names', 1)},
+        'TypeInfo': {('body', 1, 'names', 0),
+                     ('body', 4, 'args', 'args', 0, 'annotation')},
+        'erase_typevars': {
+            ('body', 2, 'names', 0),
+            ('body', 5, 'body', 0, 'value', 'comparators', 0, 'func')},
+        'Instance': {('body', 3, 'names', 0),
+                     ('body', 4, 'body', 3, 'value', 'func')},
+        'TypeVarType': {
+            ('body', 3, 'names', 1),
+            ('body', 4, 'body', 2, 'body', 0, 'value', 'args', 0, 'func')},
+        'TupleType': {('body', 3, 'names', 2)},
+        'Type': {('body', 3, 'names', 3),
+                 ('body', 5, 'args', 'args', 0, 'annotation')},
+        'fill_typevars': {('body', 4)},
+        'has_no_typevars': {('body', 5)},
+        'range': {('body', 4, 'body', 2, 'iter', 'func')},
+        'len': {('body', 4, 'body', 2, 'iter', 'args', 0, 'func')},
+    },
+    ('body', 4): {
+        'typ': {
+            ('body', 4, 'args', 'args', 0),
+            ('body', 4, 'body', 2, 'iter', 'args', 0, 'args', 0, 'value', 'value'),
+            ('body', 4, 'body', 2, 'body', 0, 'value', 'args', 0, 'args', 0, 'value', 'value', 'value'),
+            ('body', 4, 'body', 3, 'value', 'args', 0),
+            ('body', 4, 'body', 4, 'test', 'left', 'value'),
+            ('body', 4, 'body', 5, 'value', 'func', 'value', 'value')},
+        'tv': {('body', 4, 'body', 1, 'targets', 0),
+               ('body', 4, 'body', 2, 'body', 0, 'value', 'func', 'value'),
+               ('body', 4, 'body', 3, 'value', 'args', 1)},
+        'i': {('body', 4, 'body', 2, 'target'),
+              ('body', 4, 'body', 2, 'body', 0, 'value', 'args', 0, 'args', 0, 'slice', 'value')},
+        'range': {('body', 4, 'body', 2, 'iter', 'func')},
+        'len': {('body', 4, 'body', 2, 'iter', 'args', 0, 'func')},
+        'TypeVarType': {
+            ('body', 3, 'names', 1),
+            ('body', 4, 'body', 2, 'body', 0, 'value', 'args', 0, 'func')},
+        'inst': {('body', 4, 'body', 3, 'targets', 0),
+                 ('body', 4, 'body', 4, 'body', 0, 'value'),
+                 ('body', 4, 'body', 5, 'value', 'keywords', 0, 'value')},
+        'Instance': {('body', 3, 'names', 0),
+                     ('body', 4, 'body', 3, 'value', 'func')},
+        'TypeInfo': {('body', 1, 'names', 0),
+                     ('body', 4, 'args', 'args', 0, 'annotation')},
+    },
+    ('body', 5): {
+        'typ': {('body', 5, 'args', 'args', 0),
+                ('body', 5, 'body', 0, 'value', 'left'),
+                ('body', 5, 'body', 0, 'value', 'comparators', 0, 'args', 0)},
+        'erase_typevars': {
+            ('body', 2, 'names', 0),
+            ('body', 5, 'body', 0, 'value', 'comparators', 0, 'func')},
+        'Type': {('body', 3, 'names', 3),
+                 ('body', 5, 'args', 'args', 0, 'annotation')},
+    }
+}

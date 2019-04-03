@@ -1,0 +1,5 @@
+{
+  "in_name": "preprocessing/core/test_file_jedi",
+  "throws": "ValueError",
+  "regex": "Variable NOT_DEFINED accessed without definition at \\('body', 5, 'value'\\)"
+}

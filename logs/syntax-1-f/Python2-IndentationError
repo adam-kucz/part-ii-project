@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/util.py", line 57, in extract_dir
+    extraction_function(pypath, outpath)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 88, in extract_all_syntactic_contexts
+    silent_errors)
+  File "/home/acalc79/synced/part-ii-project/dlti_scripts/preprocessing/core/syntactic/extract.py", line 45, in get_all_syntactic_contexts
+    ast: ast3.AST = ast3.parse(filepath.read_text())
+  File "/home/acalc79/.local/lib/python3.6/site-packages/typed_ast/ast3.py", line 62, in parse
+    return _ast3._parse(source, filename, mode, feature_version)
+  File "<unknown>", line 6
+    dir(obj)            # 简单的列出对象obj所包含的方法名称，返回一个字符串列表
+    ^
+IndentationError: unexpected indent
+
+Source: data/repos/LearnPython/python_base.py
+
+
