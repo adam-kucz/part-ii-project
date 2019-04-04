@@ -86,14 +86,14 @@ class TypeCollector(NodeVisitor):
     # TODO: treat implicit type Tuple properly
     # priority: low (nontrivial, rare edge case only seen in incorrect code)
     def visit_for_stmt(self, node: pyt.ForStmt) -> None:
-        _, targets, _, _, colon, *_ = node.children
+        _, targets, _, _, colon, *_ = node[:]
         possible_type = bind(get_type_comment(colon), Type.from_type_comment)
         self.add_expression_types(targets, possible_type)
         self.generic_visit(node)
 
     def visit_with_stmt(self, node: pyt.WithStmt) -> None:
-        colon = node.children[-2]
-        items = [child.children[2] for child in node.children
+        colon = node[-2]
+        items = [child[2] for child in node[:]
                  if child.type == 'with_item']
         if items:
             typ = bind(get_type_comment(colon), Type.from_type_comment)
@@ -103,12 +103,12 @@ class TypeCollector(NodeVisitor):
     def visit_expr_stmt(self, node: pyt.ExprStmt) -> None:
         kind = node.kind()
         if kind & AssignmentKind.ANNOTATED:
-            target = node.children[0]
-            typ = Type.from_str(node.children[1].children[1].get_code(False))
+            target = node[0]
+            typ = Type.from_str(node[1, 1].get_code(False))
             self.add_expression_types(target, typ)
         elif kind == AssignmentKind.ASSIGNING:
             typ = bind(get_type_comment(node), Type.from_type_comment)
-            targets = node.children[:-2:2]
+            targets = node[:-2:2]
             self.add_expression_types(_as_expression(targets), typ)
         self.generic_visit(node)
 

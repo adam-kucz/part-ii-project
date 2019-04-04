@@ -6,12 +6,16 @@ from pathlib import Path
 from typing import (Callable, Dict, Iterable, List, Mapping,
                     NamedTuple, Optional, Tuple, TypeVar)
 
-import preprocessing.core as core
+from funcy import post_processing, suppress
 
-PYTHON2_BUILTINS = ['StandardError', 'apply', 'basestring', 'buffer', 'cmp',
+from .core.syntactic.collectors import AccessError
+
+PYTHON2_BUILTINS = {'StandardError', 'apply', 'basestring', 'buffer', 'cmp',
                     'coerce', 'execfile', 'file', 'intern', 'long',
                     'raw_input', 'reduce', 'reload', 'unichr',
-                    'unicode', 'xrange']
+                    'unicode', 'xrange'}
+
+PYTHON2_STRING_PREFIXES = {"ur", "UR", "Ur", "uR"}
 
 
 A = TypeVar('A')  # pylint: disable=invalid-name
@@ -56,7 +60,7 @@ def extract_dir(repo_dir: Path, out_dir: Path,
         # we want to catch and report *all* exceptions
         except Exception as err:  # pylint: disable=broad-except
             if fail_fast and not (ignore_python2 and _is_python2_error(err)):
-                err.args += ("File {}".format(pypath),)
+                err.args += (pypath,)
                 raise
             exception_dict = (exceptions.python2 if _is_python2_error(err)
                               else exceptions.general)
@@ -64,10 +68,21 @@ def extract_dir(repo_dir: Path, out_dir: Path,
     return exceptions
 
 
-def _is_python2_error(error: Exception):
-    return ((isinstance(error, core.ast_util.AccessError)
-             and error.name in PYTHON2_BUILTINS)
-            or isinstance(error, SyntaxError))
+@post_processing(any)
+def _is_python2_error(error: Exception) -> Iterable[bool]:
+    yield isinstance(error, SyntaxError)
+    if isinstance(error, AccessError):
+        name = error.name
+        yield name.value in PYTHON2_BUILTINS
+        next_leaf = name.get_next_leaf()
+        yield (name.value in PYTHON2_STRING_PREFIXES
+               and next_leaf.type == 'string')
+        prev_leaf = name.get_previous_leaf()
+        with suppress(AttributeError):
+            try_block = name.parent.get_previous_sibling()\
+                                   .get_previous_sibling()
+            yield (next_leaf.value == ':' and prev_leaf.value == ','
+                   and try_block[-1].type == 'except_clause')
 
 
 def csv_read(path: Path) -> List[List]:
@@ -75,7 +90,7 @@ def csv_read(path: Path) -> List[List]:
         return list(csv.reader(csvfile))
 
 
-def csv_write(path: Path, rows: Iterable[List]):
+def csv_write(path: Path, rows: Iterable[Iterable]):
     with path.open(mode='w', newline='') as csvfile:
         csv.writer(csvfile).writerows(rows)
 

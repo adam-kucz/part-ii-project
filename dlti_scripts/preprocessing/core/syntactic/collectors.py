@@ -1,7 +1,7 @@
 import builtins
 from typing import List, Mapping, MutableMapping
 
-from funcy import curry, iterate, pairwise
+from funcy import curry, iterate, takewhile
 import parso.python.tree as pyt
 
 from ..cst_util import (
@@ -100,12 +100,12 @@ class BindingCollector(ScopeAwareNodeVisitor):
 
     def visit_funcdef(self, node: pyt.Function):
         self._add_local(node.name.value, parent=True)
-        for child in node.children[2:]:  # skip 'def <name>'
+        for child in node[2:]:  # skip 'def <name>'
             self.visit(child)
 
     def visit_classdef(self, node: pyt.Class):
         self._add_local(node.name.value, parent=True)
-        for child in node.children[2:]:  # skip 'class <name>'
+        for child in node[2:]:  # skip 'class <name>'
             self.visit(child)
 
     def visit_expr_stmt(self, node: pyt.ExprStmt):
@@ -114,7 +114,7 @@ class BindingCollector(ScopeAwareNodeVisitor):
             # avoid visiting augmented assignment target
             # because it cannot introduce new bindings
             # but its .is_definition() still returns True
-            for child in node.children[1:]:
+            for child in node[1:]:
                 self.visit(child)
         elif kind & AssignmentKind.ASSIGNING:
             self.generic_visit(node)
@@ -126,7 +126,7 @@ class BindingCollector(ScopeAwareNodeVisitor):
         self._add_global(*(n.value for n in node.get_global_names()))
 
     def visit_nonlocal_stmt(self, node: pyt.KeywordStatement):
-        self._add_nonlocal(*(n.value for n in node.children[1::2]))
+        self._add_nonlocal(*(n.value for n in node[1::2]))
 
     def visit_name(self, node: pyt.Name):
         if node.is_definition():
@@ -150,7 +150,34 @@ class BindingCollector(ScopeAwareNodeVisitor):
 def get_defining_namespace(
         bindings: Mapping[Namespace, Mapping[str, Namespace]],
         name: pyt.Name) -> Namespace:
-    for child, parent in pairwise(iterate(getparent, name)):
+    nested = False
+    parents = list(takewhile(iterate(getparent, name)))
+    for i, parent in enumerate(parents):
         if parent not in bindings:
             continue
-        # TODO: implement scoping *yuck*
+        namespace = bindings[parent]
+        ptype = parent.type
+        if ptype in ('funcdef', 'classdef') and name is parent.name:
+            continue
+        elif ptype in ('funcdef', 'lambdef'):
+            param = parents[i - (2 if ptype == 'funcdef' else 1)]
+            if param in parent.get_params() and name is param.default:
+                continue
+        elif ptype == 'classdef':
+            if nested:  # Python hides class scope from nested elements
+                continue
+            if parents[i - 1] is parent.get_super_arglist():
+                continue
+        elif parent.is_comprehension():
+            if i >= 2 and parent[-1, 3] is parents[i - 2]:
+                continue
+        if name.value in namespace:
+            return namespace[name.value]
+        nested = True
+    raise AccessError(name)
+
+
+class AccessError(NameError):
+    def __init__(self, name: pyt.Name):
+        self.name = name
+        super().__init__("Unbound name", self.name)

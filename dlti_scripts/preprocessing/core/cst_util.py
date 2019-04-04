@@ -6,6 +6,16 @@ from parso.python.tree import ExprStmt, ImportFrom, PythonNode
 from parso.tree import NodeOrLeaf, BaseNode, Leaf
 
 
+@monkey(BaseNode)
+def __getitem__(self, index):
+    if not isinstance(index, Iterable):
+        return self.children[index]
+    node = self
+    for i in index:
+        node = node.children[i]
+    return node
+
+
 def getparent(node: NodeOrLeaf) -> Optional[NodeOrLeaf]:
     return node.parent
 
@@ -38,7 +48,7 @@ class NodeVisitor(object):
 
     def generic_visit_node(self, node: BaseNode):
         """Called if no explicit visitor function exists for a node."""
-        for child in node.children:
+        for child in node[:]:
             self.visit(child)
 
     def generic_visit_leaf(self, node: Leaf):
@@ -100,17 +110,10 @@ class ScopeAwareNodeVisitor(NodeVisitor):
         self.end_scope()
 
     def visit(self, node: NodeOrLeaf):
-        new_namespace: bool = False
         try:
-            if node.type in ('file_input', 'funcdef', 'lambdef', 'classdef'):
-                new_namespace = True
-            # types that may include comprehension
-            elif node.type in ('testlist_comp', 'dictorsetmaker', 'argument'):
-                try:
-                    if node.children and node.children[-1].type == 'comp_for':
-                        new_namespace = True
-                except AttributeError:
-                    pass
+            new_namespace: bool = (node.type in ('file_input', 'funcdef',
+                                                 'lambdef', 'classdef')
+                                   or node.is_comprehension())
         except Exception as err:
             err.args += (node,)
             raise
@@ -137,14 +140,14 @@ def kind(self: ExprStmt) -> AssignmentKind:
     assign = AssignmentKind.ASSIGNING
     if operators[0] != '=':
         return AssignmentKind.AUGMENTED | assign
-    if self.children[1].type == 'annassign':
+    if self[1].type == 'annassign':
         return AssignmentKind.ANNOTATED | assign
     return assign
 
 
 @monkey(ImportFrom)
 def is_starred(self: ImportFrom) -> bool:
-    names = self.children[3]
+    names = self[3]
     return names.type == 'operator' and names.value == '*'
 
 
@@ -157,10 +160,16 @@ class TrailerKind(Flag):
 @monkey(PythonNode)
 def trailer_kind(self: PythonNode) -> TrailerKind:
     assert self.type == 'trailer', "Called '.trailer_kind()' on non-trailer"
-    op = self.children[0].value
+    op = self[0].value
     if op == '.':
         return TrailerKind.ATTRIBUTE
     if op == '(':
         return TrailerKind.ARGUMENTS
     if op == '[':
         return TrailerKind.INDICES
+
+
+@monkey(NodeOrLeaf)
+def is_comprehension(self: NodeOrLeaf) -> bool:
+    return (self.type in ('testlist_comp', 'dictorsetmaker', 'argument')
+            and self[-1].type == 'comp_for')

@@ -4,10 +4,12 @@ from pathlib import Path
 from typing import (Callable, IO, Iterable, List,  # noqa: F401
                     Optional, Tuple, TypeVar, Union)
 
+from funcy import pairwise, takewhile, iterate
 import parso
 import parso.python.tree as pyt
-from parso.tree import Leaf, NodeOrLeaf, search_ancestor
+from parso.tree import Leaf, search_ancestor
 
+from ..cst_util import getparent
 from ..type_collector import TypeCollector
 from ..type_representation import Type
 from ...util import csv_write
@@ -18,20 +20,19 @@ T = TypeVar('T')
 
 
 def not_part_of_annotaion(leaf: Leaf):
-    branch: NodeOrLeaf = leaf
-    while branch.parent:
-        par = branch.parent
-        ptype = par.type
+    for child, parent in pairwise(takewhile(iterate(getparent, leaf))):
+        ptype = parent.type
         if ptype == 'annassign':
-            return branch not in par.children[0:2]
+            return child not in parent[0:2]
         if ptype == 'funcdef':
-            return par.annotation and branch not in par.children[3:5]
+            return not parent.annotation or child not in parent[3:5]
         if ptype == 'tfpdef':
-            return branch not in par.children[1:3]
-        if ptype in ('stmt', 'simple_stmt', 'compound_stmt', 'param'):
+            return child not in parent[1:3]
+        if ptype in ('stmt', 'simple_stmt',
+                     'compound_stmt', 'param', 'file_input'):
             return True
-        branch = par
-    raise ValueError("Reached root when checking for annotation", leaf)
+    raise ValueError("Reached root when checking for annotation",
+                     *takewhile(iterate(getparent, leaf)))
 
 
 def get_next_satisfying(item: T, next_func: Callable[[T], T],
@@ -68,10 +69,10 @@ def get_context(name: pyt.Name, ctx_size: int) -> List[str]:
 
 def is_unassigned_annassign(name: pyt.Name):
     ancestor = search_ancestor(name, 'expr_stmt')
-    if not ancestor or ancestor.children[1].type != 'annassign':
+    if not ancestor or ancestor[1].type != 'annassign':
         return False
-    annassign = ancestor.children[1]
-    result = len(annassign.children) == 2
+    annassign = ancestor[1]
+    result = len(annassign[:]) == 2
     if result:
         print("{} is in unassigned assign".format(name))
     return result
