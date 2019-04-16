@@ -6,9 +6,6 @@ from tensorflow.keras.layers import Input, Lambda
 from tensorflow.keras.models import Model
 from tensorflow.contrib.lookup import index_table_from_tensor, LookupInterface
 
-__all__ = ['CategoricalIndex', 'CategoricalOneHot',
-           'CharLevel', 'StringEncoder']
-
 
 class CategoricalIndex(Lambda):
     def __init__(self, alphabet: Iterable[str], unk=False):

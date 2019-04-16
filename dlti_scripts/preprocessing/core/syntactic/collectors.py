@@ -1,12 +1,15 @@
 import builtins
-from typing import List, Mapping, MutableMapping
+from collections import defaultdict
+from pprint import pformat
+from typing import List, Mapping, MutableMapping, Optional
 
 from funcy import curry, iterate, takewhile
 import parso.python.tree as pyt
 
 from ..cst_util import (
     AssignmentKind, Namespace, NamespaceKind,
-    ScopeAwareNodeVisitor, TrailerKind, getparent)
+    ScopeAwareNodeVisitor, TrailerKind, getparent, pure_annotation)
+from ...util import AccessError, track_total_time
 
 
 # builtins + variables optionally set by the import machinery
@@ -23,12 +26,22 @@ class BindingCollector(ScopeAwareNodeVisitor):
     # etc.
     bindings: MutableMapping[Namespace, Mapping[str, Namespace]]
     _starred_import: bool
+    # needed for correct nonlocal semantics
+    _parent_func_ready: bool
+    _deferred: List[pyt.Function]
+    binding_logs: Mapping[str, List] = defaultdict(list)
 
     def __init__(self) -> None:
         super().__init__()
         self.bindings = {}
         self._starred_import = False
+        self._parent_func_ready = True
+        self._deferred = []
 
+    @track_total_time
+    def visit(self, node) -> None:
+        super().visit(node)
+        
     def begin_scope(self, namespace: Namespace):
         super().begin_scope(namespace)
         self.bindings[self.current_namespace] = {}
@@ -62,15 +75,18 @@ class BindingCollector(ScopeAwareNodeVisitor):
                                parent_namespace=self.global_namespace)
 
     def _add_nonlocal(self, *names: str):
-        for index in reversed(range(1, len(self.current_namespaces) - 1)):
-            nonlocal_namespace = self.current_namespaces[index]
-            if nonlocal_namespace.kind() == NamespaceKind.FUNCTION:
-                self._add_to_namespace(*names,
-                                       namespace=self.current_namespace,
-                                       parent_namespace=nonlocal_namespace)
+        for name in names:
+            for index in reversed(range(1, len(self.current_namespaces) - 1)):
+                nonlocal_namespace = self.current_namespaces[index]
+                if (nonlocal_namespace.kind() == NamespaceKind.FUNCTION
+                        and name in self.bindings[nonlocal_namespace]):
+                    self._add_to_namespace(name,
+                                           namespace=self.current_namespace,
+                                           parent_namespace=nonlocal_namespace)
                 return
-        raise SyntaxError("No nonlocal scope found for {} in {}"
-                          .format(names, self.current_namespaces))
+        raise SyntaxError("No nonlocal scope found for {} in {}\nBindings:\n{}"
+                          .format(names, self.current_namespaces,
+                                  pformat(self.bindings)))
 
     @property
     def current_bindings(self) -> MutableMapping[str, Namespace]:
@@ -93,17 +109,29 @@ class BindingCollector(ScopeAwareNodeVisitor):
                                                parent_namespace=glob)
                     else:
                         raise ValueError(
-                            ("Invalid bindings, {} at {} refers to {}, "
+                            ("Invalid bindings, '{}' in {} refers to {}, "
                              "but is not defined there")
                             .format(identifier,
                                     namespace_pos, parent_namespace))
 
     def visit_funcdef(self, node: pyt.Function):
+        BindingCollector.binding_logs['funcdef'].append(node.name)
         self._add_local(node.name.value, parent=True)
+        # necessary for correct nonlocal treatment
+        if not self._parent_func_ready:
+            self._deferred.append(node)
+            return
+        self._parent_func_ready = False
         for child in node[2:]:  # skip 'def <name>'
             self.visit(child)
+        self._parent_func_ready = True
+        deferred = self._deferred
+        self._deferred = []
+        for deferred_funcdef in deferred:
+            self.visit(deferred_funcdef)
 
     def visit_classdef(self, node: pyt.Class):
+        BindingCollector.binding_logs['classdef'].append(node.name)
         self._add_local(node.name.value, parent=True)
         for child in node[2:]:  # skip 'class <name>'
             self.visit(child)
@@ -123,13 +151,21 @@ class BindingCollector(ScopeAwareNodeVisitor):
         # variable but its .is_definitino() still returns True
  
     def visit_global_stmt(self, node: pyt.GlobalStmt):
+        BindingCollector.binding_logs['global'].extend(node.get_global_names())
         self._add_global(*(n.value for n in node.get_global_names()))
 
     def visit_nonlocal_stmt(self, node: pyt.KeywordStatement):
+        BindingCollector.binding_logs['nonlocal'].extend(node[1::2])
         self._add_nonlocal(*(n.value for n in node[1::2]))
 
     def visit_name(self, node: pyt.Name):
-        if node.is_definition():
+        # slightly strange del semantics, refer to
+        # https://docs.python.org/3/reference/executionmodel.html
+        if node.is_definition() or node.parent.type == 'del_stmt':
+            if node.parent.type == 'del_stmt':
+                BindingCollector.binding_logs['del'].append(node)
+            else:
+                BindingCollector.binding_logs['target'].append(node)
             self._add_local(node.value)
 
     # TODO: handle attrributes properly
@@ -147,9 +183,10 @@ class BindingCollector(ScopeAwareNodeVisitor):
 
 
 @curry
+@track_total_time
 def get_defining_namespace(
         bindings: Mapping[Namespace, Mapping[str, Namespace]],
-        name: pyt.Name) -> Namespace:
+        name: pyt.Name) -> Optional[Namespace]:
     nested = False
     parents = list(takewhile(iterate(getparent, name)))
     for i, parent in enumerate(parents):
@@ -157,9 +194,11 @@ def get_defining_namespace(
             continue
         namespace = bindings[parent]
         ptype = parent.type
+        if ptype == 'classdef' and pure_annotation(name):
+            return None
         if ptype in ('funcdef', 'classdef') and name is parent.name:
             continue
-        elif ptype in ('funcdef', 'lambdef'):
+        if ptype in ('funcdef', 'lambdef'):
             param = parents[i - (2 if ptype == 'funcdef' else 1)]
             if param in parent.get_params() and name is param.default:
                 continue
@@ -175,9 +214,3 @@ def get_defining_namespace(
             return namespace[name.value]
         nested = True
     raise AccessError(name)
-
-
-class AccessError(NameError):
-    def __init__(self, name: pyt.Name):
-        self.name = name
-        super().__init__("Unbound name", self.name)

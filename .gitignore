@@ -1,5 +1,8 @@
 data/
 out/
+out-old/
+logs/**/*
+/**/tmp
 *.csv
 
 # Created by https://www.gitignore.io/api/emacs,python,pycharm+all

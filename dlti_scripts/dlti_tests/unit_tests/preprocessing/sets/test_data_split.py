@@ -1,11 +1,13 @@
 from pathlib import Path
 from typing import Mapping
+import unittest
 
 import preprocessing.sets.data_splits as splits
 from dlti_tests.util import (
     DATADIR, PROJDIR, TestWithOutDir, for_all_cases, csv_read)
 
 
+@unittest.skip
 class TestSplitData(TestWithOutDir):
 
     # TODO: make this test independent of data outside test/ directory

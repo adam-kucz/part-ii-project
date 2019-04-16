@@ -122,6 +122,8 @@ class Type(Generic[T], metaclass=ABCMeta):
 
         Assumes implicit toplevel tuple if encountered list
         """
+        if type_comment.strip() == "ignore":
+            return None
         # TODO: fix hack, does not work 100% of the time
         ast: AST = ast3.parse(type_comment, mode='eval')
         if isinstance(ast, Expression) and isinstance(ast.body, Tuple):

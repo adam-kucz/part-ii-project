@@ -1,9 +1,12 @@
+from collections import defaultdict
 from enum import Enum, Flag, auto, unique
-from typing import Iterable, List, Optional
+from typing import Iterable, List, Optional, Mapping, Tuple
 
-from funcy import monkey
-from parso.python.tree import ExprStmt, ImportFrom, PythonNode
+from funcy import monkey, iterate, takewhile, any
+from parso.python.tree import ExprStmt, ImportFrom, PythonNode, Name
 from parso.tree import NodeOrLeaf, BaseNode, Leaf
+
+from ..util import static_vars
 
 
 @monkey(BaseNode)
@@ -85,6 +88,7 @@ def kind(self: Namespace) -> str:
 class ScopeAwareNodeVisitor(NodeVisitor):
     """NodeVisitor that keeps track of namespaces and AST positions"""
     current_namespaces: List[Namespace]
+    scope_logs: Mapping[Tuple[NamespaceKind, ...], int] = defaultdict(int)
 
     def __init__(self) -> None:
         super().__init__()
@@ -106,6 +110,8 @@ class ScopeAwareNodeVisitor(NodeVisitor):
 
     def visit_with_new_scope(self, node: NodeOrLeaf, namespace: Namespace):
         self.begin_scope(namespace)
+        kinds = tuple(map(lambda nam: nam.kind(), self.current_namespaces))
+        ScopeAwareNodeVisitor.scope_logs[kinds] += 1
         super().visit(node)
         self.end_scope()
 
@@ -173,3 +179,22 @@ def trailer_kind(self: PythonNode) -> TrailerKind:
 def is_comprehension(self: NodeOrLeaf) -> bool:
     return (self.type in ('testlist_comp', 'dictorsetmaker', 'argument')
             and self[-1].type == 'comp_for')
+
+
+@monkey(NodeOrLeaf)
+def not_in_expression(self: NodeOrLeaf) -> bool:
+    return any(self.type.endswith, ('stmt', 'def')) or self.type == 'decorator'
+
+
+@static_vars(names=[])
+def pure_annotation(name: Name):
+    for parent in takewhile(iterate(getparent, name)):
+        if parent.type == 'expr_stmt':
+            result = parent.kind() == AssignmentKind.ANNOTATED
+            if result:
+                pure_annotation.names.append(name)
+            return result
+        if parent.not_in_expression():
+            return False
+    raise ValueError("End of parent chain",
+                     *takewhile(iterate(getparent, name)))

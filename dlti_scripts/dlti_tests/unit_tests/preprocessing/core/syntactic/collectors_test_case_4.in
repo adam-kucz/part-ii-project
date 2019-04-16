@@ -1,0 +1,6 @@
+def h(a):
+    def i():
+        nonlocal a
+        a += 2
+        return a
+    return i() + i() + a

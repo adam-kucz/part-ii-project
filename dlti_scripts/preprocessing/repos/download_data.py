@@ -42,8 +42,9 @@ def remove_non_python(data_dir: str) -> None:
             # type: str, List[str], List[str]
         root_path: Path = Path(root)
         for name in files:  # type: str
-            if Path(name).suffix != ".py":
-                root_path.joinpath(name).unlink()
+            path = Path(name)
+            if path.suffix != ".py" or not path.is_file():
+                root_path.joinpath(path).unlink()
         for name in dirs:  # type: str
             try:
                 root_path.joinpath(name).rmdir()

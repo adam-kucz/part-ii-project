@@ -1,13 +1,25 @@
 import ast
+from collections import defaultdict
 import re
-from typing import Collection, Iterable, List, Mapping, NamedTuple, Optional
+import traceback
+from typing import (
+    Collection, Iterable, List, Mapping, NamedTuple, Optional, Tuple, Any)
 
+from funcy import ignore, last, mapcat, some, map
 import parso.python.tree as pyt
 from parso.tree import NodeOrLeaf
 
 from .cst_util import AssignmentKind, NodeVisitor
 from .type_representation import FunctionType, TupleType, Type, UNANNOTATED
 from ..util import bind, intersperse
+
+
+class InvalidTypeAnnotation(ValueError):
+    def __init__(self, value: NodeOrLeaf, annotation: str):
+        self.value = value.get_code(False)
+        self.annotation = annotation
+        self.pos = value.start_pos
+        super().__init__(self.pos, self.value, self.annotation)
 
 
 def get_type_comment(node: NodeOrLeaf) -> Optional[str]:
@@ -36,6 +48,8 @@ class TypeRecord(NamedTuple):
 class TypeCollector(NodeVisitor):
     types: List[TypeRecord]
     func_as_ret: bool
+    type_logs: Mapping[str, List[TypeRecord]] = defaultdict(list)
+    other_logs: Mapping[str, Any] = {'func_type_comments': 0}
 
     def __init__(self, func_as_ret: bool = True) -> None:
         self.func_as_ret = func_as_ret
@@ -43,31 +57,41 @@ class TypeCollector(NodeVisitor):
 
     def add_type(self, node: pyt.Name, typ: Optional[Type]):
         if typ:
-            self.types.append(TypeRecord(node, typ))
+            record = TypeRecord(node, typ)
+            self.types.append(record)
+            category = some(map("visit_([a-z]+)",
+                                map(lambda sf: sf.name,
+                                    reversed(traceback.extract_stack()))))
+            TypeCollector.type_logs[category].append(record)
 
+    @ignore(InvalidTypeAnnotation)
     def add_expression_types(self, node: NodeOrLeaf,
                              typ: Optional[Type]) -> None:
-        # TODO: remove dependency on ast (legacy)
+        if typ is None:
+            return
         name_to_node: Mapping[str, pyt.Name]\
             = {name.value: name for name in node.iter_leaves()
                if name.type == 'name'}
 
-        def _add_node_types(node: ast.AST, typ: Optional[Type]):
+        # TODO: remove dependency on ast (legacy)
+        def _extract_node_types(ast_node: ast.AST, typ: Type)\
+                -> Iterable[Tuple[str, Type]]:
             if (isinstance(typ, TupleType) and typ.regular
-                    and isinstance(node, ast.Tuple)
-                    and len(typ.args) == len(node.elts)):
-                for child_node, child_type in zip(node.elts, typ.args):
-                    _add_node_types(child_node, child_type)
-            elif typ and isinstance(node, ast.Name):
-                self.add_type(name_to_node[node.id], typ)
+                    and isinstance(ast_node, ast.Tuple)
+                    and len(typ.args) == len(ast_node.elts)):
+                yield from mapcat(_extract_node_types, ast_node.elts, typ.args)
+            elif typ and isinstance(ast_node, ast.Name):
+                yield (name_to_node[ast_node.id], typ)
             elif typ:
-                raise ValueError(
-                    "Invalid type annotation, names: '{}', type: {}"
-                    .format(node.get_code(False), str(typ)), node, typ)
-        _add_node_types(ast.parse(node.get_code(False)).body[0].value, typ)
+                raise InvalidTypeAnnotation(node, typ)
+        ast_node = ast.parse(node.get_code(False)).body[0].value
+        # 'last' forces iteration
+        last(map(self.add_type, *zip(*_extract_node_types(ast_node, typ))))
 
     def visit_funcdef(self, node: pyt.Function) -> None:
         # TODO: handle type comments for functions
+        if get_type_comment(node[-2]):
+            TypeCollector.other_logs['func_type_comments'] += 1
         return_type = bind(node.annotation,
                            lambda ann: Type.from_str(ann.get_code(False)))
         if self.func_as_ret:

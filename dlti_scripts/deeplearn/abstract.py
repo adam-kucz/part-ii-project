@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from enum import auto, Flag
 from pathlib import Path
-from typing import Optional
+from typing import Callable, NamedTuple, Optional
 
 import tensorflow as tf
 
@@ -33,8 +33,15 @@ class DataMode(Flag):
     PREDICT = TEST & ~LABELS  # pylint: disable=invalid-unary-operand-type
 
 
+class SizedDataset(NamedTuple):
+    data: tf.data.Dataset
+    steps_per_epoch: int
+
+    def map(self, func: Callable) -> 'SizedDataset':
+        return SizedDataset(self.data.map(func), self.steps_per_epoch)
+
+
 class DataReader(ABC):
     @abstractmethod
-    def __call__(self, path: Path,
-                 mode: Optional[DataMode]) -> tf.data.Dataset:
+    def __call__(self, path: Path, mode: Optional[DataMode]) -> SizedDataset:
         pass

@@ -1,21 +1,18 @@
 """Collection of useful methods that do not belong anywhere else"""
-from collections import defaultdict
 import csv
-from itertools import chain
 from pathlib import Path
-from typing import (Callable, Dict, Iterable, List, Mapping,
-                    NamedTuple, Optional, Tuple, TypeVar)
+import sys
+from time import perf_counter as timer
+from typing import (Callable, Iterable, List, NamedTuple, Optional, TypeVar)
 
-from funcy import post_processing, suppress
-
-from .core.syntactic.collectors import AccessError
+from funcy import post_processing, some, decorator
+import parso
+from parso.utils import PythonVersionInfo
 
 PYTHON2_BUILTINS = {'StandardError', 'apply', 'basestring', 'buffer', 'cmp',
                     'coerce', 'execfile', 'file', 'intern', 'long',
                     'raw_input', 'reduce', 'reload', 'unichr',
                     'unicode', 'xrange'}
-
-PYTHON2_STRING_PREFIXES = {"ur", "UR", "Ur", "uR"}
 
 
 A = TypeVar('A')  # pylint: disable=invalid-name
@@ -30,66 +27,146 @@ def bind(a: Optional[A], f: Callable[[A], Optional[B]]) -> Optional[B]:
     return f(a) if a else None
 
 
-class GatheredExceptions(NamedTuple):
-    general: Dict[type, List[Tuple[Path, Exception]]]
-    python2: Dict[type, List[Tuple[Path, Exception]]]
+def static_vars(**kwargs):
+    def decorate(func):
+        for key, value in kwargs.items():
+            if hasattr(func, key):
+                raise ValueError("Function already has attribute", func, key)
+            setattr(func, key, value)
+        return func
+    return decorate
 
-    @property
-    def all(self) -> Mapping[type, List[Tuple[Path, Exception]]]:
-        return dict(chain(self.general.items(), self.python2.items()))
+
+class AccessError(NameError):
+    def __init__(self, name: parso.python.tree.Name):
+        self.name = name
+        super().__init__("Unbound name", self.name)
 
 
+class ExceptionRecord(NamedTuple):
+    type: type
+    version: Optional[PythonVersionInfo]
+    exception: Exception
+    path: Path
+
+
+@decorator
+def _total_time_wrapper(call):
+    func = call._func
+    if func.nesting == 0:
+        func.nesting += 1
+        start = timer()
+        value = call()
+        func.total_time += timer() - start
+        func.nesting -= 1
+        return value
+    func.nesting += 1
+    value = call()
+    func.nesting -= 1
+    return value
+
+
+@static_vars(trackers=set())
+def track_total_time(func):
+    func.nesting = 0
+    func.total_time = 0
+    track_total_time.trackers.add(func)
+    return _total_time_wrapper(func)
+
+
+def format_time(sec):
+    if sec < 1e-6:
+        mul, unit = 1e9, 'ns'
+    elif sec < 1e-3:
+        mul, unit = 1e6, 'us'
+    elif sec < 1:
+        mul, unit = 1e3, 'ms'
+    elif sec < 100:
+        mul, unit = 1, 's'
+    elif sec < 3600:
+        mul, unit = 1 / 60, 'min'
+    else:
+        mul, unit = 1 / 3600, 'h'
+    return f"{sec * mul:8.2f} {unit:>3}"
+
+
+def with_durations(seq, prefix="", label=""):
+    """Prints time of processing of each item in seq.
+
+    Like in funcy, but label can be a function of item"""
+    it = iter(seq)
+    for i, item in enumerate(it):
+        print(prefix.format(i=i, item=item) if type(prefix) == str
+              else prefix(i=i, item=item),
+              end='')
+        sys.stdout.flush()
+        start = timer()
+        yield item
+        print(f"{format_time(timer() - start)} in iteration {i}"
+              + (label.format(i=i, item=item) if type(label) == str
+                 else label(i=i, item=item)))
+
+
+@static_vars(count=0)
 def extract_dir(repo_dir: Path, out_dir: Path,
                 extraction_function: Callable[[Path, Path], None],
                 fail_fast: bool = False, ignore_python2: bool = True)\
-                -> GatheredExceptions:
+                -> Iterable[ExceptionRecord]:
     """
     Extracts annotaions from all files in the directory
 
     Stores the files in per-repo subdirectories of out_dir
     """
-    exceptions = GatheredExceptions(defaultdict(list), defaultdict(list))
-    for pypath in filter(lambda p: p.is_file(), repo_dir.rglob('*.py')):\
-            # type: Path
-        rel: Path = pypath.relative_to(repo_dir)
-        repo: str = rel.parts[0]
-        outpath: Path = out_dir.joinpath(repo, '+'.join(rel.parts[1:]))\
-                               .with_suffix('.csv')
-        try:
-            extraction_function(pypath, outpath)
-        # we want to catch and report *all* exceptions
-        except Exception as err:  # pylint: disable=broad-except
-            if fail_fast and not (ignore_python2 and _is_python2_error(err)):
-                err.args += (pypath,)
-                raise
-            exception_dict = (exceptions.python2 if _is_python2_error(err)
-                              else exceptions.general)
-            exception_dict[type(err)].append((pypath, err))
-    return exceptions
+    for projdir in with_durations(
+            filter(Path.is_dir, repo_dir.iterdir()),
+            prefix=lambda i, item: f"Extracting from {str(item) + ' ...':35}"):
+        for pypath in filter(lambda p: p.is_file(), projdir.rglob('*.py')):\
+                # type: Path
+            rel: Path = pypath.relative_to(repo_dir)
+            repo: str = rel.parts[0]
+            outpath: Path = out_dir.joinpath(repo, '+'.join(rel.parts[1:]))\
+                                   .with_suffix('.csv')
+            try:
+                extraction_function(pypath, outpath)
+                extract_dir.count += 1
+            # we want to catch and report *all* exceptions
+            except Exception as err:  # pylint: disable=broad-except
+                if fail_fast and not (ignore_python2
+                                      and _is_python2_error(err)):
+                    err.args += (pypath,)
+                    raise
+                version = (PythonVersionInfo(2, 7) if _is_python2_error(err)
+                           else None)
+                yield ExceptionRecord(type(err), version, err, pypath)
 
 
 @post_processing(any)
 def _is_python2_error(error: Exception) -> Iterable[bool]:
-    yield isinstance(error, SyntaxError)
+    # TODO: add node parameter to these errors and check for parsing in 2.7
+    yield isinstance(error, (SyntaxError, UnicodeDecodeError))
     if isinstance(error, AccessError):
         name = error.name
         yield name.value in PYTHON2_BUILTINS
-        next_leaf = name.get_next_leaf()
-        yield (name.value in PYTHON2_STRING_PREFIXES
-               and next_leaf.type == 'string')
-        prev_leaf = name.get_previous_leaf()
-        with suppress(AttributeError):
-            try_block = name.parent.get_previous_sibling()\
-                                   .get_previous_sibling()
-            yield (next_leaf.value == ':' and prev_leaf.value == ','
-                   and try_block[-1].type == 'except_clause')
+        code = name.get_root_node().get_code()
+        grammar = parso.load_grammar(version='2.7')
+        yield some(grammar.iter_errors(grammar.parse(code))) is None
+        # yield (name.value in PYTHON2_STRING_PREFIXES
+        #        and next_leaf.type == 'string')
+        # prev_leaf = name.get_previous_leaf()
+        # with suppress(AttributeError):
+        #     try_block = name.parent.get_previous_sibling()\
+        #                            .get_previous_sibling()
+        #     yield (next_leaf.value == ':' and prev_leaf.value == ','
+        #            and try_block[-1].type == 'except_clause')
 
 
+@track_total_time
 def csv_read(path: Path) -> List[List]:
     with path.open(newline='') as csvfile:
         return list(csv.reader(csvfile))
 
 
+@track_total_time
 def csv_write(path: Path, rows: Iterable[Iterable]):
     with path.open(mode='w', newline='') as csvfile:
         csv.writer(csvfile).writerows(rows)

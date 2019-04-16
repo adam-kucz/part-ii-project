@@ -8,6 +8,7 @@ from typing import Any, Callable, Dict
 import tensorflow as tf
 
 from .modules.model_trainer import ModelTrainer
+from .util import csv_write
 
 __all__ = ['interactive']
 
@@ -27,6 +28,7 @@ def interactive(
         trainer_producer: Callable[[int, Dict[str, Any], dict], ModelTrainer],
         train_name: str = 'train.csv',
         validate_name: str = 'validate.csv',
+        test_name: str = 'test.csv',
         final_checkpoint: str = 'weights_{}.keras',
         core_checkpoint: str = 'core_weights_{}.keras'):
     start_time: datetime = datetime.now()
@@ -53,12 +55,15 @@ def interactive(
     parser.add_argument('-l', '--learning_rate', default=0.01, type=float)
     parser.add_argument('-t', '--test', action='store_true',
                         help='test only (on the validation set)')
+    parser.add_argument('-f', '--final_test', action='store_true',
+                        help='run final test (on the true test set)')
     parser.add_argument('-v', '--verbose', type=int, default=1,
                         help='set verbosity level')
     args = parser.parse_args()
 
     train_path: Path = args.data_path.joinpath(train_name)
     validate_path: Path = args.data_path.joinpath(validate_name)
+    test_path: Path = args.data_path.joinpath(test_name)
 
     params = json.loads(args.params.read_text())
     optimizer = tf.keras.optimizers.get(args.optimizer)
@@ -69,7 +74,9 @@ def interactive(
         trainer.load_weights(final_checkpoint)
         print("Successfully restored network with epoch {}"
               .format(trainer.epoch))
-    except ValueError:
+    except ValueError as err:
+        if err.args[1] != 'not_found':
+            raise
         print("No checkpoints found, training from scratch")
 
     if not args.test:
@@ -78,6 +85,10 @@ def interactive(
                       patience=args.patience, verbose=args.verbose)
         trainer.save_weights(final_checkpoint)
         trainer.save_core_weights(core_checkpoint)
-    trainer.test(validate_path)
+
+    if not args.final_test:
+        trainer.test_detail(validate_path, 'predictions_epoch{}.csv')
+    else:
+        trainer.test_detail(test_path, 'test_predictions_epoch{}.csv')
 
     print("Finished successfully in {}".format(datetime.now() - start_time))

@@ -11,8 +11,8 @@ if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
     exit 1
 fi
 
-OPTIONS=fqm:c:l:
-LONGOPTS=fun_as_ret,fail_fast,mode:,ctx_size:,logdir:
+OPTIONS=cfqm:s:l:
+LONGOPTS=comments,fun_as_ret,fail_fast,mode:,ctx_size:,logdir:
 
 # -use ! and PIPESTATUS to get exit code with errexit set
 # -temporarily store output to be able to check for errors
@@ -29,6 +29,7 @@ eval set -- "$PARSED"
 
 MODE=none
 F=""
+C=""
 CTX_SIZE=0
 Q=""
 ERROR_LOGDIR=""
@@ -39,6 +40,10 @@ while true; do
             F=-f
             shift
             ;;
+        -c|--comments)
+            C=-c
+            shift
+            ;;
         -q|--fail_fast)
             Q=--fail_fast
             shift
@@ -47,7 +52,7 @@ while true; do
             MODE="$2"
             shift 2
             ;;
-        -c|--ctx_size)
+        -s|--ctx_size)
             CTX_SIZE="$2"
             shift 2
             ;;
@@ -92,9 +97,9 @@ function callf(){
 # program proper
 source ../setdirs.sh
 
-if [[ $MODE == context || $MODE == syntax ]]
+if [[ $MODE == context || $MODE == occurence ]]
 then
-    NAME=$MODE-$CTX_SIZE$F
+    NAME=$MODE-$CTX_SIZE$F$C
 else
     NAME=$MODE$F
 fi
@@ -105,7 +110,7 @@ then
 fi
 
 cd $PROJDIR
-callf python3 $SCRIPTRELDIR/extract_data.py $MODE $DATARELDIR/repos $DATARELDIR/raw/$NAME --ctx_size $CTX_SIZE $F $Q --logdir $LOGDIR/$ERROR_LOGDIR
+callf python3 $SCRIPTRELDIR/extract_data.py $MODE $DATARELDIR/repos $DATARELDIR/raw/$NAME --ctx_size $CTX_SIZE $F $C $Q --logdir $LOGDIR/$ERROR_LOGDIR
 callf python3 $SCRIPTRELDIR/split_data.py $DATARELDIR/raw/$NAME $DATARELDIR/sets/$NAME -l $LOGDIR/data-split.txt -r
 cd $DATARELDIR/sets/$NAME
 callf python3 $SCRIPTDIR/create_vocab_and_generalise.py train.csv -g train.csv validate.csv test.csv
@@ -117,3 +122,4 @@ mv test.csv test-original.csv
 mv train-general.csv train.csv
 mv validate-general.csv validate.csv
 mv test-general.csv test.csv
+

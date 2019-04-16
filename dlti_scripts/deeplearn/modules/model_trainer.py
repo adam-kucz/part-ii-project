@@ -1,6 +1,7 @@
 from pathlib import Path
-from typing import Optional
+from typing import Iterable, Optional
 
+from funcy import cut_suffix
 import numpy as np
 from parse import parse
 import tensorflow as tf
@@ -8,30 +9,9 @@ from tensorflow.keras import backend as K
 from tensorflow.keras.models import Model
 import tensorflow.keras.callbacks as cb
 
-from ..abstract import (DataMode, DataReader)
-
-__all__ = ['ModelTrainer']
-
-
-def _steps_per_epoch(dataset: tf.data.Dataset) -> int:
-    # hack to get dataset size requires disabling some pylint rules
-    DatasetV1Adapter = type(tf.data.Dataset.range(0))
-    # pylint: disable=invalid-name,protected-access
-    RepeatDataset = type(tf.data.Dataset.range(0).repeat()._dataset)
-    # pylint: enable=invalid-name
-    if isinstance(dataset, DatasetV1Adapter):
-        dataset = dataset._dataset
-    while isinstance(dataset, RepeatDataset):
-        dataset = dataset._input_dataset
-        if isinstance(dataset, DatasetV1Adapter):
-            dataset = dataset._dataset
-    # pylint: enable=protected-access
-
-    result = dataset.reduce(0, lambda x, _: x + 1)
-    sess = tf.Session()
-    sess.run(tf.initializers.tables_initializer())
-    result = sess.run(result)
-    return result
+from ..abstract import DataMode, DataReader
+from ..data_ops.data_interface import CompleteRecordReader
+from ..util import csv_write
 
 
 class RestoreBest(cb.Callback):
@@ -136,7 +116,7 @@ class ModelTrainer:
         def set_epoch(epoch):
             self._epoch = epoch
         return self.model.fit(
-            x=train_dataset,
+            x=train_dataset.data,
             initial_epoch=self.epoch, epochs=self.epoch + epochs,
             callbacks=[
                 cb.ModelCheckpoint(self._checkpointformat,
@@ -149,15 +129,52 @@ class ModelTrainer:
                                  verbose=verbose),
                 RestoreBest(set_epoch=set_epoch, monitor=self.monitor,
                             verbose=verbose)],
-            verbose=verbose, shuffle=False, validation_data=val_dataset,
-            steps_per_epoch=_steps_per_epoch(train_dataset),
-            validation_steps=_steps_per_epoch(val_dataset))
+            verbose=verbose, shuffle=False, validation_data=val_dataset.data,
+            steps_per_epoch=train_dataset.steps_per_epoch,
+            validation_steps=val_dataset.steps_per_epoch)
 
     def test(self, valpath: Path, verbose=1):
         self._ensure_initialized()
-        val_dataset = self.data_reader(valpath, DataMode.TEST)
+        val_dataset, steps = self.data_reader(valpath, DataMode.TEST)
         return self.model.evaluate(x=val_dataset, verbose=verbose,
-                                   steps=_steps_per_epoch(val_dataset))
+                                   steps=steps)
+
+    def full_predictions(self, valpath, verbose) -> Iterable[Iterable]:
+        original_reader = self.data_reader
+        self.data_reader = CompleteRecordReader(original_reader)
+        predictions = self.predict(valpath, verbose)
+        return predictions
+    
+        # dataset, _ = original_reader(
+        #     valpath, DataMode.INPUTS | DataMode.LABELS | DataMode.ONEPASS)
+
+        # def add_to_tuple(tup, record):
+        #     (xs, ys), (x, y) = tup, record
+        #     y = tf.expand_dims(y, 0)
+        #     return (tf.concat([xs, x], 0), tf.concat([ys, y], 0))
+        # empty_x = tf.constant([], dtype=tf.string)
+        # empty_y = tf.constant([], dtype=tf.int64)
+        # print("Reducing")
+        # xs, ys = K.get_session().run(
+        #     dataset.reduce((empty_x, empty_y), add_to_tuple))
+        # print("Reduced")
+        # self.data_reader = original_reader
+        # return zip(xs, ys, predictions)
+
+    def test_detail(self, valpath: Path, out_fileformat: Path, verbose=1):
+        self._ensure_initialized()
+        val_dataset, steps = self.data_reader(valpath, DataMode.TEST)
+        metrics = self.model.evaluate(x=val_dataset, verbose=verbose,
+                                      steps=steps)
+        out_filename = self.outpath.joinpath(self.run_name,
+                                             out_fileformat.format(self.epoch))
+        csv_write(out_filename, self.full_predictions(valpath, verbose))
+        return metrics
+
+    def predict(self, data_path: Path, verbose=1):
+        self._ensure_initialized()
+        dataset, steps = self.data_reader(data_path, DataMode.PREDICT)
+        return self.model.predict(x=dataset, steps=steps, verbose=verbose)
 
     @property
     def model(self):
@@ -197,10 +214,10 @@ class ModelTrainer:
                 self._epoch = epoch
 
         if not found:
-            raise ValueError("Cannot load weights, no saved file found")
+            raise ValueError("Cannot load weights, no saved file found",
+                             'not_found')
 
-        if found.endswith('.index'):
-            found = found[:-len('.index')]
+        found = cut_suffix(found, '.index')
         self.model.load_weights(found)
         if load_optimizer:
             raise NotImplementedError()

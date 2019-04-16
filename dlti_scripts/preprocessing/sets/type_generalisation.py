@@ -1,20 +1,21 @@
 from pathlib import Path
-from typing import List, NamedTuple, Optional
+from typing import List, NamedTuple
 
 from ..core.type_representation import Type
 from ..util import csv_read, csv_write
 
 
 def generalise_to_vocab(vocab: List[str], typ_str: str) -> str:
-    def in_vocab(typ_str: str) -> Optional[str]:
+    try:
         generalized = Type.from_str(typ_str)
-        while generalized:
-            if str(generalized) in vocab:
-                return str(generalized)
-            generalized = generalized.generalize()
-        return None
-    found = in_vocab(typ_str)
-    return found if found else typ_str
+    except SyntaxError as err:
+        err.args += (typ_str,)
+        raise
+    while generalized:
+        if str(generalized) in vocab:
+            return str(generalized)
+        generalized = generalized.generalize()
+    return typ_str
 
 
 class Generalisation(NamedTuple):
