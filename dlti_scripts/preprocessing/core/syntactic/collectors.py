@@ -41,7 +41,7 @@ class BindingCollector(ScopeAwareNodeVisitor):
     @track_total_time
     def visit(self, node) -> None:
         super().visit(node)
-        
+
     def begin_scope(self, namespace: Namespace):
         super().begin_scope(namespace)
         self.bindings[self.current_namespace] = {}

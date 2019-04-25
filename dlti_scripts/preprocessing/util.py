@@ -107,6 +107,7 @@ def with_durations(seq, prefix="", label=""):
                  else label(i=i, item=item)))
 
 
+@track_total_time
 @static_vars(count=0)
 def extract_dir(repo_dir: Path, out_dir: Path,
                 extraction_function: Callable[[Path, Path], None],

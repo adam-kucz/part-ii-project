@@ -116,6 +116,7 @@ def get_all_syntactic_contexts(
             yield (contexts, typ)
 
 
+@track_total_time
 def extract_all_syntactic_contexts(
         in_filename: Path, out_filename: Path, context_size: int = 5,
         func_as_ret: bool = False, include_comments: bool = False) -> None:

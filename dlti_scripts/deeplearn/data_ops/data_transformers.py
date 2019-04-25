@@ -2,8 +2,8 @@ import string
 from typing import Iterable
 
 import tensorflow as tf
-from tensorflow.keras.layers import Input, Lambda
-from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Lambda, InputLayer
+from tensorflow.keras.models import Sequential
 from tensorflow.contrib.lookup import index_table_from_tensor, LookupInterface
 
 
@@ -30,13 +30,13 @@ class OneHot(Lambda):
         return input_shape + (self.depth,)
 
 
-class CategoricalOneHot(Model):
+class CategoricalOneHot(Sequential):
     def __init__(self, alphabet: Iterable[str], unk: bool = False):
         alphabet = tuple(alphabet)
-        strs = Input(shape=(), dtype=tf.string)
-        indices = CategoricalIndex(alphabet, unk)(strs)
-        one_hot = OneHot(len(alphabet) + (1 if unk else 0))(indices)
-        super().__init__(strs, one_hot)
+        super().__init__()
+        self.add(InputLayer(input_shape=(), dtype=tf.string))
+        self.add(CategoricalIndex(alphabet, unk))
+        self.add(OneHot(len(alphabet) + (1 if unk else 0)))
 
 
 class CharLevel(Lambda):
@@ -58,13 +58,13 @@ class CharLevel(Lambda):
         return input_shape + (self.num_chars,)
 
 
-class StringEncoder(Model):
+class StringEncoder(Sequential):
     def __init__(self, str_length: int):
         self.str_length = str_length
         # '\n' might be useful because it is preserved as a token by parso
         self.alphabet = string.ascii_lowercase + string.ascii_uppercase +\
                         string.digits + string.punctuation + '\n'  # noqa: E127
-        strs = Input(shape=(), dtype=tf.string)
-        chars = CharLevel(str_length)(strs)
-        char_one_hot = CategoricalOneHot(self.alphabet)(chars)
-        super().__init__(strs, char_one_hot)
+        super().__init__()
+        self.add(InputLayer(input_shape=(), dtype=tf.string))
+        self.add(CharLevel(str_length))
+        self.add(CategoricalOneHot(self.alphabet))

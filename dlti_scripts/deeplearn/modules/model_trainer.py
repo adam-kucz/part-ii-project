@@ -139,10 +139,11 @@ class ModelTrainer:
         return self.model.evaluate(x=val_dataset, verbose=verbose,
                                    steps=steps)
 
-    def full_predictions(self, valpath, verbose) -> Iterable[Iterable]:
+    def full_predictions(self, valpath, verbose) -> Iterable[Iterable[float]]:
         original_reader = self.data_reader
         self.data_reader = CompleteRecordReader(original_reader)
         predictions = self.predict(valpath, verbose)
+        self.data_reader = original_reader
         return predictions
     
         # dataset, _ = original_reader(

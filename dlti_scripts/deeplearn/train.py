@@ -70,13 +70,16 @@ def interactive(
     trainer = trainer_producer(params, args.data_path, args.batch_size,
                                out_dir=args.out_path, run_name=args.run_name,
                                optimizer=optimizer)
-    try:
-        trainer.load_weights(final_checkpoint)
-        print("Successfully restored network with epoch {}"
-              .format(trainer.epoch))
-    except ValueError as err:
-        if err.args[1] != 'not_found':
-            raise
+    for pattern in (final_checkpoint, None):
+        try:
+            trainer.load_weights(pattern)
+            print("Successfully restored network with epoch {}"
+                  .format(trainer.epoch))
+            break
+        except ValueError as err:
+            if err.args[1] != 'not_found':
+                raise
+    else:
         print("No checkpoints found, training from scratch")
 
     if not args.test:

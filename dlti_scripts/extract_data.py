@@ -67,11 +67,12 @@ def print_extra_logs_to(extra_logs: Tuple, fileout: TextIO):
     sys.stdout = tmp
 
 
+@track_total_time
 @print_durations(repr_len=50)
 def main(inpath: Path, outpath: Path, mode: str,
          kwarg_dict: Dict[str, Any],
          logdir: Optional[Path] = None, fail_fast: bool = False):
-    function, arglist, extra_logs = MODES[mode]
+    function, arglist, _ = MODES[mode]
     kwargs = dict((arglist[k], kwarg_dict[k]) for k in arglist)
 
     exceptions = extract_dir(inpath, outpath,
@@ -95,8 +96,6 @@ def main(inpath: Path, outpath: Path, mode: str,
                 else:
                     print(err, file=fileout)
                     print("In {}".format(err_path), file=fileout)
-        with logdir.joinpath("extra_logs.txt").open('w') as fout:
-            print_extra_logs_to(extra_logs, fout)
     else:
         for err_type, version, err, err_path in exceptions:
             prefix = "Python{}.{}-".format(*version) if version else ""
@@ -109,7 +108,6 @@ def main(inpath: Path, outpath: Path, mode: str,
             else:
                 print(err)
                 print("In {}".format(err_path))
-        print_extra_logs_to(extra_logs, sys.stdout)
     pprint(exception_count)
 
 
@@ -140,3 +138,9 @@ if __name__ == "__main__":
                     or ARGS.repodir.parent.joinpath('data', 'sets', ARGS.mode))
     main(ARGS.repodir, OUTDIR, ARGS.mode, vars(ARGS),
          ARGS.logdir, fail_fast=ARGS.fail_fast)
+    _, _, EXTRA_LOGS = MODES[ARGS.mode]
+    if ARGS.logdir:
+        with ARGS.logdir.joinpath("extra_logs.txt").open('w') as fout:
+            print_extra_logs_to(EXTRA_LOGS, fout)
+    else:
+        print_extra_logs_to(EXTRA_LOGS, sys.stdout)
