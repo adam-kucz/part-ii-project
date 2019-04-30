@@ -1,26 +1,24 @@
-from enum import auto, Enum, unique
 from pathlib import Path
-from typing import List, Tuple, Iterable, Optional
+from typing import List, Tuple, Iterable, Optional, NamedTuple
 
 from funcy import post_processing, lmap, partial, cached_property, lfilter
 
-from .util import Interactive, cli_or_interactive
+from .util import (Interactive, Record, RecordMode,
+                   cli_or_interactive, read_dataset)
 from ..util import csv_read
 
 UNANNOTATED = '_'
 
 
-class Record:
+class RecordWithPrediction(NamedTuple):
     identifier: str
     inputs: Tuple
     label: str
     predictions: List[Tuple[str, float]]
 
-    def __init__(self, identifier, inputs, label, predictions):
-        self.identifier = identifier
-        self.inputs = inputs
-        self.label = label
-        self.predictions = predictions
+    @staticmethod
+    def from_record(record: Record, predictions: List[Tuple[str, float]]):
+        return RecordWithPrediction(*record, predictions)
 
     def most_likely(self) -> str:
         return self.predictions[0][0]
@@ -40,15 +38,16 @@ class Record:
         return self.label in self.top_k(k)
 
 
-@unique
-class RecordMode(Enum):
-    IDENTIFIER = auto()
-    CONTEXT = auto()
-    OCCURENCES = auto()
+def get_full_records(mode, ctx_size, data_path: Path, predictions_path: Path)\
+        -> Iterable[RecordWithPrediction]:
+    predictions = map(partial(lmap, eval), csv_read(predictions_path))
+    return map(RecordWithPrediction.from_record,
+               read_dataset(mode, ctx_size, data_path),
+               predictions)
 
 
 class Predictions(Interactive):
-    records: List[Record]
+    records: List[RecordWithPrediction]
     vocab: List[str]
 
     def __init__(self, dataset_path: Path, predictions_path: Path,
@@ -57,22 +56,15 @@ class Predictions(Interactive):
                  ctx_size: int = 0) -> None:
         self.vocab = lmap(0, csv_read(vocab_path)) if vocab_path else None
         self.mode = mode
-        actual = csv_read(dataset_path)
-        predictions = lmap(partial(lmap, eval), csv_read(predictions_path))
-        assert len(actual) == len(predictions)
-
-        def get_id(ctx):
-            return ctx[ctx_size // 2]
-        self.records = lmap(lambda t, p:
-                            Record(get_id(t[:-1]), t[:-1], t[-1], p),
-                            actual, predictions)
+        self.records = list(get_full_records(mode, ctx_size,
+                                             dataset_path, predictions_path))
 
     @cached_property
-    def correct(self) -> List[Record]:
+    def correct(self) -> List[RecordWithPrediction]:
         return lfilter(lambda r: r.correct(self.vocab), self.records)
 
     @cached_property
-    def wrong(self) -> List[Record]:
+    def wrong(self) -> List[RecordWithPrediction]:
         return lfilter(lambda r: not r.correct(self.vocab), self.records)
 
 

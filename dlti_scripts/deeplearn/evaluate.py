@@ -3,8 +3,9 @@ from datetime import datetime
 import json
 import os
 from pathlib import Path
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Iterable
 
+from funcy import re_test
 import tensorflow as tf
 
 from .modules.model_trainer import ModelTrainer
@@ -25,11 +26,7 @@ tf.logging.set_verbosity(tf.logging.ERROR)
 def interactive(
         program_name: str,
         trainer_producer: Callable[[int, Dict[str, Any], dict], ModelTrainer],
-        train_name: str = 'train.csv',
-        validate_name: str = 'validate.csv',
-        test_name: str = 'test.csv',
-        final_checkpoint: str = 'weights_{}.keras',
-        core_checkpoint: str = 'core_weights_{}.keras'):
+        final_checkpoint: str = 'weights_{}.keras'):
     start_time: datetime = datetime.now()
     parser = argparse.ArgumentParser(
         description="Run '{}'".format(program_name),
@@ -44,31 +41,16 @@ def interactive(
                         help='unique name for the run')
     parser.add_argument('-b', '--batch_size', default=64, type=int,
                         help='batch size')
-    parser.add_argument('-e', '--epochs', default=100, type=int,
-                        help='number of training epochs')
-    parser.add_argument('-o', '--optimizer', default='adagrad',
-                        help='optimizer to use in training')
-    parser.add_argument('-p', '--patience', type=int, default=64,
-                        help=("number of epochs without improvement"
-                              " to wait before early stopping"))
-    parser.add_argument('-l', '--learning_rate', default=0.01, type=float)
-    parser.add_argument('-t', '--test', action='store_true',
-                        help='test only (on the validation set)')
-    parser.add_argument('-f', '--final_test', action='store_true',
-                        help='run final test (on the true test set)')
     parser.add_argument('-v', '--verbose', type=int, default=1,
                         help='set verbosity level')
     args = parser.parse_args()
 
-    train_path: Path = args.data_path.joinpath(train_name)
-    validate_path: Path = args.data_path.joinpath(validate_name)
-    test_path: Path = args.data_path.joinpath(test_name)
+    test_paths: Iterable[Path] = [p for p in args.data_path.glob("*.csv")
+                                  if re_test(r'test\d+$', p.stem)]
 
     params = json.loads(args.params.read_text())
-    optimizer = tf.keras.optimizers.get(args.optimizer)
     trainer = trainer_producer(params, args.data_path, args.batch_size,
-                               out_dir=args.out_path, run_name=args.run_name,
-                               optimizer=optimizer)
+                               out_dir=args.out_path, run_name=args.run_name)
     for pattern in (final_checkpoint, None):
         try:
             trainer.load_weights(pattern)
@@ -79,18 +61,10 @@ def interactive(
             if err.args[1] != 'not_found':
                 raise
     else:
-        print("No checkpoints found, training from scratch")
+        print("No checkpoints found")
+        return
 
-    if not args.test:
-        trainer.train(train_path, validate_path,
-                      epochs=args.epochs, learning_rate=args.learning_rate,
-                      patience=args.patience, verbose=args.verbose)
-        trainer.save_weights(final_checkpoint)
-        trainer.save_core_weights(core_checkpoint)
-
-    if not args.final_test:
-        trainer.test_detail(validate_path, 'predictions_epoch{}.csv')
-    else:
-        trainer.test_detail(test_path, 'test_predictions_epoch{}.csv')
+    for test_path in test_paths:
+        trainer.test_detail(test_path, test_path.stem + '_epoch{}.csv')
 
     print("Finished successfully in {}".format(datetime.now() - start_time))

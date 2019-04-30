@@ -44,7 +44,7 @@ class CategoricalStandalone(StandardStandalone):
         super().__init__(name, dataset_producer, inputs, probabilities, core,
                          tf.keras.losses.CategoricalCrossentropy(),
                          metrics, out_dir, run_name,
-                         monitor='val_sparse_categorical_accuracy',
+                         monitor='val_loss',
                          optimizer=optimizer)
 
 

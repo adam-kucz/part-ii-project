@@ -1,5 +1,6 @@
 """Collection of useful methods that do not belong anywhere else"""
 import csv
+from inspect import signature
 from pathlib import Path
 import sys
 from time import perf_counter as timer
@@ -161,13 +162,28 @@ def _is_python2_error(error: Exception) -> Iterable[bool]:
         #            and try_block[-1].type == 'except_clause')
 
 
+def augment_except(*args: str):
+    @decorator
+    def decorated(call):
+        try:
+            return call()
+        except Exception as err:
+            bound = signature(call._func).bind(*call._args, *call._kwargs)\
+                                         .arguments
+            err.args += tuple(bound[arg] for arg in args)
+            raise
+    return decorated
+
+
 @track_total_time
+@augment_except('path')
 def csv_read(path: Path) -> List[List]:
     with path.open(newline='') as csvfile:
         return list(csv.reader(csvfile))
 
 
 @track_total_time
+@augment_except('path')
 def csv_write(path: Path, rows: Iterable[Iterable]):
     with path.open(mode='w', newline='') as csvfile:
         csv.writer(csvfile).writerows(rows)

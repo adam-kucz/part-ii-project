@@ -11,8 +11,8 @@ if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
     exit 1
 fi
 
-OPTIONS=cfqm:s:l:g:
-LONGOPTS=comments,fun_as_ret,fail_fast,mode:,ctx_size:,logdir:,granularity:
+OPTIONS=cfm:s:g:
+LONGOPTS=comments,fun_as_ret,mode:,ctx_size:,granularity:
 
 # -use ! and PIPESTATUS to get exit code with errexit set
 # -temporarily store output to be able to check for errors
@@ -31,8 +31,6 @@ MODE=none
 F=""
 C=""
 CTX_SIZE=0
-Q=""
-ERROR_LOGDIR=""
 SUFFIX=""
 # now enjoy the options in order and nicely split until we see --
 while true; do
@@ -45,10 +43,6 @@ while true; do
             C=-c
             shift
             ;;
-        -q|--fail_fast)
-            Q=--fail_fast
-            shift
-            ;;
         -m|--mode)
             MODE="$2"
             shift 2
@@ -59,10 +53,6 @@ while true; do
             ;;
         -g|--granularity)
             SUFFIX="$2"
-            shift 2
-            ;;
-        -l|--logdir)
-            ERROR_LOGDIR="$2"
             shift 2
             ;;
         --)
@@ -100,6 +90,8 @@ function callf(){
 }
 
 # program proper
+SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+cd $SCRIPTDIR
 source ../setdirs.sh
 
 if [[ $MODE == context || $MODE == occurence ]]
@@ -109,19 +101,31 @@ else
     NAME=$MODE$F
 fi
 
-if [[ $ERROR_LOGDIR == "" ]]
+if [[ $SUFFIX ]]
 then
-    ERROR_LOGDIR=$NAME
+    DATASET_NAME=$NAME-$SUFFIX
+    SPLIT_NAME=$LOGDIR/$SUFFIX-split.txt
+else
+    DATASET_NAME=$NAME
+    SPLIT_NAME=$LOGDIR/data-split.txt
 fi
+
+DATASET_DIR=$DATARELDIR/sets/$DATASET_NAME
 
 cd $PROJDIR
-callf python3 $SCRIPTRELDIR/extract_data.py $MODE $DATARELDIR/repos $DATARELDIR/raw/$NAME --ctx_size $CTX_SIZE $F $C $Q --logdir $LOGDIR/$ERROR_LOGDIR
+if [ -d $DATASET_DIR ]; then rm -r $DATASET_DIR; fi
+callf python3 $SCRIPTRELDIR/split_data.py $DATARELDIR/raw/$NAME $DATASET_DIR -l $SPLIT_NAME -r
+cd $DATASET_DIR
+callf python3 $SCRIPTDIR/create_vocab_and_generalise.py train.csv -a vocab.csv
 
-if [[ $MODE == context || $MODE == occurence ]]
-then
-    VARARGS="$C -s $CTX_SIZE"
-else
-    VARARGS=""
-fi
-
-$SCRIPTRELDIR/fine-split.sh $MODE $F -g "$SUFFIX" $VARARGS
+for i in $(ls *.csv)
+do
+    if [[ $i != *"-general.csv" && $i != "vocab.csv" ]]
+    then
+        mv $i ${i%.csv}-original.csv
+    fi
+done
+for i in $(ls *-general.csv)
+do
+    mv $i ${i%-general.csv}.csv
+done

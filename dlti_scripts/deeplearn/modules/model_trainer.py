@@ -6,7 +6,7 @@ import numpy as np
 from parse import parse
 import tensorflow as tf
 from tensorflow.keras import backend as K
-from tensorflow.keras.models import Model
+from tensorflow.keras.models import Model, load_model
 import tensorflow.keras.callbacks as cb
 
 from ..abstract import DataMode, DataReader
@@ -200,7 +200,7 @@ class ModelTrainer:
             self._checkpointpath.joinpath(self.fileformat))
 
     def load_weights(self, filename_format: Optional[str] = None,
-                     load_optimizer: bool = False):
+                     load_optimizer: bool = True):
         found = None
         # TODO: remove '.index' hacks
         file_format = filename_format or (self.fileformat + '.index')
@@ -219,21 +219,22 @@ class ModelTrainer:
                              'not_found')
 
         found = cut_suffix(found, '.index')
-        self.model.load_weights(found)
         if load_optimizer:
-            raise NotImplementedError()
+            self._model = load_model(found)
+        else:
+            self.model.load_weights(found)
+
         print("Loaded wieghts from epoch {}, file {}"
               .format(self.epoch, found))
 
-    def save_weights(self, filename_format, save_optimizer: bool = False):
+    def save_weights(self, filename_format, save_optimizer: bool = True):
         filename = filename_format.format(self.epoch)
         path = self._checkpointpath.joinpath(filename)
         self.model.save_weights(str(path))
         if save_optimizer:
-            raise NotImplementedError()
             optimizer_path = Path(str(path.with_suffix('')) +
                                   '-optimizer').with_suffix(path.suffix)
-            self.model.optimizer.save_weights(str(optimizer_path))
+            self.model.save(str(optimizer_path))
 
     def save_core_weights(self, filename_format):
         filename = filename_format.format(self.epoch)

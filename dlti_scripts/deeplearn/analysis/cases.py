@@ -1,19 +1,20 @@
+from collections import Counter
 from pprint import pprint
 import random
 from typing import Callable, Iterable, List, Optional
 
 from funcy import map, walk_values, group_by, ilen, cached_property
+import numpy as np
 
-from .util import with_pickable_options, pickable_option
-from .predictions import Predictions, Record, RecordMode
-
-
-def random_from(sequence) -> Iterable:
-    while True:
-        yield random.choice(sequence)
+from .util import pickable_option
+from .predictions import Predictions, RecordWithPrediction, RecordMode
 
 
-@with_pickable_options
+record_confidence = RecordWithPrediction.confidence
+record_most_likely = RecordWithPrediction.most_likely
+random_perm = np.random.permutation
+
+
 class Cases(Predictions):
     vocab: List[str]
 
@@ -30,30 +31,31 @@ class Cases(Predictions):
         print(", ".join("{} ({}%)".format(val, perc)
                         for val, perc in record.predictions[:k]))
 
-    def print_unique_by(self, iterable: Iterable, key=lambda r: r.identifier,
-                        printer: Optional[Callable[[Record], None]] = None,
-                        n: int = 10):
+    def print_unique_by(
+            self, iterable: Iterable, key=lambda r: r.identifier,
+            printer: Optional[Callable[[RecordWithPrediction], None]] = None,
+            n: int = 10):
         printer = printer or self.print_details
-        examples = []
+        examples = set()
         for record in iterable:
             if key(record) in examples:
                 continue
-            examples.append(key(record))
+            examples.add(key(record))
             printer(record)
             if len(examples) >= n:
                 break
 
     @cached_property
     def most_sure(self):
-        most_sure = map(lambda t: max(t[1], key=Record.confidence),
+        most_sure = map(lambda t: max(t[1], key=record_confidence),
                         group_by(lambda r: r.identifier, self.correct).items())
-        return sorted(most_sure, key=Record.confidence, reverse=True)
+        return sorted(most_sure, key=record_confidence, reverse=True)
 
     @cached_property
     def most_wrong(self):
-        most_wrong = map(lambda t: max(t[1], key=Record.confidence),
+        most_wrong = map(lambda t: max(t[1], key=record_confidence),
                          group_by(lambda r: r.identifier, self.wrong).items())
-        return sorted(most_wrong, key=Record.confidence, reverse=True)
+        return sorted(most_wrong, key=record_confidence, reverse=True)
 
     @pickable_option
     def show_most_sure(self):
@@ -78,36 +80,69 @@ class Cases(Predictions):
     @pickable_option
     def show_correct_random(self):
         print("Correct, random:")
-        self.print_unique_by(random_from(self.correct))
+        self.print_unique_by(random_perm(self.correct))
 
     @pickable_option
     def show_wrong_random(self):
         print("Wrong, random:")
-        self.print_unique_by(random_from(self.wrong))
+        self.print_unique_by(random_perm(self.wrong))
+
+    @pickable_option
+    def show_most_for_types(self):
+        for typ, records in group_by(record_most_likely, self.records):
+            correct_records = (r for r in records if r.correct(self.vocab))
+            grouped_by_id = group_by(lambda r: r.identifier, correct_records)
+            unique_id = map(lambda t: max(t[1], key=record_confidence),
+                            grouped_by_id.items())
+            most_sure = sorted(unique_id, key=record_confidence, reverse=True)
+            print(f"For type {typ} most sure about:")
+            self.print_unique_by(most_sure)
+            print()
+            print(f"For type {typ} correct, but very unsure:")
+            self.print_unique_by(reversed(most_sure))
+            print()
+            print(f"For type {typ} correct, random:")
+            self.print_unique_by(random_perm(most_sure))
+            print()
+            wrong_records = (r for r in records if r.correct(self.vocab))
+            grouped_by_id = group_by(lambda r: r.identifier, wrong_records)
+            unique_id = map(lambda t: max(t[1], key=record_confidence),
+                            grouped_by_id.items())
+            most_wrong = sorted(unique_id, key=record_confidence, reverse=True)
+            print(f"For type {typ} most wrong about:")
+            self.print_unique_by(most_wrong)
+            print(f"For type {typ} wrong, justifiably unsure:")
+            self.print_unique_by(reversed(most_wrong))
+            print()
+            print(f"For type {typ} wrong, random:")
+            self.print_unique_by(random_perm(most_sure))
+            print()
 
     @pickable_option
     def predicted_types_stats(self):
         print("Numbers of predicted types:")
-        pprint(walk_values(len, dict(group_by(Record.most_likely,
+        pprint(walk_values(len, dict(group_by(record_most_likely,
                                               self.records))))
 
     @pickable_option
     def correct_predicted_types_stats(self):
         print("Numbers of predicted types in correct records:")
-        pprint(walk_values(len, dict(group_by(Record.most_likely,
+        pprint(walk_values(len, dict(group_by(record_most_likely,
                                               self.correct))))
 
     @pickable_option
     def wrong_predicted_types_stats(self):
         print("Numbers of predicted types in wrong records:")
-        pprint(walk_values(len, dict(group_by(Record.most_likely,
-                                              self.wrong))))
+        pprint(walk_values(lambda records:
+                           Counter(r.label for r in records).most_common(),
+                           dict(group_by(record_most_likely, self.wrong))))
 
     @pickable_option
     def show_accuracy(self):
         accuracy = len(self.correct) / len(self.records)
         real_accuracy\
-            = (len(self.correct)
+            = (ilen(r for r in self.records
+                    if r.label in self.vocab and r.correct(self.vocab))
                / ilen(r for r in self.records if r.label in self.vocab))
         print("Accuracy: {}%, real accuracy: {}%"
               .format(100 * accuracy, 100 * real_accuracy))
