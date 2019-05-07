@@ -6,7 +6,7 @@ import sys
 from time import perf_counter as timer
 from typing import (Callable, Iterable, List, NamedTuple, Optional, TypeVar)
 
-from funcy import post_processing, some, decorator
+from funcy import post_processing, some, decorator, mapcat, caller
 import parso
 from parso.utils import PythonVersionInfo
 
@@ -26,6 +26,12 @@ T = TypeVar('T')  # pylint: disable=invalid-name
 def bind(a: Optional[A], f: Callable[[A], Optional[B]]) -> Optional[B]:
     """Monadic bind for the Option monad"""
     return f(a) if a else None
+
+
+def app(f: Iterable[Callable[[A], B]], a: Iterable[A]) -> Iterable[B]:
+    f = list(f)
+    return mapcat(lambda it: map(caller(it), f), a)
+# pylint: enable=invalid-name
 
 
 def static_vars(**kwargs):

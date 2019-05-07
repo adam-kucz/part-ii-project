@@ -2,17 +2,16 @@ from typing import Any, Mapping
 
 import tensorflow as tf
 from tensorflow.keras.layers import (
-    Convolution1D, Dense, Dropout, Flatten, InputLayer, ReLU, SpatialDropout1D)
+    Convolution1D, Dense, Dropout, Flatten, InputLayer, SpatialDropout1D)
 from tensorflow.keras.models import Sequential
 
 from ..data_ops.data_transformers import StringEncoder
 
-__all__ = ['CharCNN']
-
 
 class CharCNN(Sequential):
-    def __init__(self, params: Mapping[str, Any]):
+    def __init__(self, params: Mapping[str, Any], name: str = ''):
         super().__init__()
+        self.params = params
         self.add(InputLayer(input_shape=(), dtype=tf.string))
         self.add(StringEncoder(params['identifier_length']))
         for layer_params in params['convolutional']:

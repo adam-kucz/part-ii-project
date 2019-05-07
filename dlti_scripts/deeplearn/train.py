@@ -28,8 +28,8 @@ def interactive(
         train_name: str = 'train.csv',
         validate_name: str = 'validate.csv',
         test_name: str = 'test.csv',
-        final_checkpoint: str = 'weights_{}.keras',
-        core_checkpoint: str = 'core_weights_{}.keras'):
+        final_checkpoint: str = 'weights_{epoch}-optimizer',
+        core_checkpoint: str = 'core_weights_{epoch}'):
     start_time: datetime = datetime.now()
     parser = argparse.ArgumentParser(
         description="Run '{}'".format(program_name),

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, NamedTuple
+from typing import Container, NamedTuple
 
 from funcy import lmap
 
@@ -8,7 +8,7 @@ from ..util import csv_read, csv_write, augment_except
 
 
 @augment_except('typ_str')
-def generalise_to_vocab(vocab: List[str], typ_str: str) -> str:
+def generalise_to_vocab(vocab: Container[str], typ_str: str) -> str:
     generalized = Type.from_str(typ_str)
     while generalized:
         if str(generalized) in vocab:

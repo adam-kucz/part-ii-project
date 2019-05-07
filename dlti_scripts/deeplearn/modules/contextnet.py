@@ -8,7 +8,7 @@ __all__ = ['ContextNet']
 
 
 class ContextNet(Model):
-    def __init__(self, params: Mapping[str, Any]):
+    def __init__(self, params: Mapping[str, Any], name: str = ''):
         ctx_len = params['ctx_len'] * 2 + 1
         tokens = [Input(shape=(), dtype=tf.string) for i in range(ctx_len)]
         charcnn_outputs = [params['token_net'](token) for token in tokens]
@@ -19,3 +19,7 @@ class ContextNet(Model):
             if 'dropout' in layer_params:
                 tensor = Dropout(layer_params['dropout'])(tensor)
         super().__init__(tokens, tensor)
+        self.contextnet_params = params
+
+    # def get_config(self):
+    #     return {'params': self.contextnet_params}

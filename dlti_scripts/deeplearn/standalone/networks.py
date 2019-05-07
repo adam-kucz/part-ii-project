@@ -8,8 +8,6 @@ from ..modules.charcnn import CharCNN
 from ..modules.contextnet import ContextNet
 from .standard import VocabCategoricalStandalone
 from ..data_ops.data_interface import CsvReader
-from ..data_ops.data_transformers import CategoricalIndex
-from ..util import csv_read
 
 __all__ = ['FullCharCNN', 'FullContextNet']
 

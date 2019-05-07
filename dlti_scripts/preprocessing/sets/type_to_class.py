@@ -24,3 +24,4 @@ def create_vocab(in_filename: Path,
             included += count
             if included / len(types) >= percentage:
                 return VocabStats(vocab_size, len(Counter(types)))
+    raise ValueError(in_filename, percentage)

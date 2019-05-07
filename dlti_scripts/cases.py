@@ -1,6 +1,7 @@
+#!/usr/bin/python3
 from pathlib import Path
 
-from funcy import some
+from funcy import some, cut_suffix
 
 from deeplearn.analysis.util import RecordMode, redirect_stdout
 from deeplearn.analysis.cases import Cases
@@ -10,7 +11,8 @@ OUTPATH = PROJPATH.joinpath("out")
 DATAPATH = PROJPATH.joinpath("data", "sets")
 LOGPATH = PROJPATH.joinpath("logs")
 
-NETNAME = "charcnn-f-april"
+NETNAME = "contextnet-1-f-c-april"
+DATANAME = "context-1-f-c-very-fine"
 
 LOGFILE = LOGPATH.joinpath(NETNAME, "run0", "cases-log.txt")
 
@@ -32,5 +34,5 @@ def main(dataset_path: Path, net_path: Path):
 
 
 if __name__ == '__main__':
-    redirect_stdout(LOGFILE)(main)(DATAPATH.joinpath("identifier-f"),
-                                   OUTPATH.joinpath(NETNAME))
+    redirect_stdout(LOGFILE, main,
+                    DATAPATH.joinpath(DATANAME), OUTPATH.joinpath(NETNAME))

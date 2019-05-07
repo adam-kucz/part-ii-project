@@ -1,6 +1,5 @@
 from collections import Counter
 from pprint import pprint
-import random
 from typing import Callable, Iterable, List, Optional
 
 from funcy import map, walk_values, group_by, ilen, cached_property
@@ -38,6 +37,7 @@ class Cases(Predictions):
         printer = printer or self.print_details
         examples = set()
         for record in iterable:
+            assert isinstance(record, RecordWithPrediction), record
             if key(record) in examples:
                 continue
             examples.add(key(record))

@@ -25,7 +25,7 @@ class StandardStandalone(ModelTrainer):
                  inputs: SomeLayers, outputs: SomeLayers, core: Model,
                  loss, metrics: List, out_dir: Path,
                  run_name: str = 'default', monitor: str = 'val_loss',
-                 optimizer=tf.keras.optimizers.Adam()):
+                 optimizer=tf.train.AdamOptimizer()):
         super().__init__(name, dataset_producer, Model(inputs, outputs), core,
                          out_dir, run_name, monitor=monitor)
         self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
@@ -36,10 +36,9 @@ class CategoricalStandalone(StandardStandalone):
     def __init__(self, name: str, dataset_producer: DataReader, class_num: int,
                  inputs: SomeLayers, outputs: SomeLayers, core: Model,
                  out_dir: Path, run_name: str = 'default', metrics: List = [],
-                 optimizer=tf.keras.optimizers.Adam()):
+                 optimizer=tf.train.AdamOptimizer()):
         topk = metr.sparse_top_k_categorical_accuracy
-        metrics = metrics + [metr.SparseCategoricalAccuracy(),
-                             topk]
+        metrics = metrics + [metr.SparseCategoricalAccuracy(), topk]
         probabilities = ProbabilityOutput(class_num)(outputs)
         super().__init__(name, dataset_producer, inputs, probabilities, core,
                          tf.keras.losses.CategoricalCrossentropy(),
@@ -53,7 +52,7 @@ class VocabCategoricalStandalone(CategoricalStandalone):
                  dataset_reader: DataReader, vocab_path: Path,
                  inputs: SomeLayers, outputs: SomeLayers, core: Model,
                  out_dir: Path, run_name: str = 'default', metrics: List = [],
-                 optimizer=tf.keras.optimizers.Adam()):
+                 optimizer=tf.train.AdamOptimizer()):
         vocab: List[str] = lmap(0, csv_read(vocab_path))
         self.index_to_typ: Mapping[int, str] = {i: typ
                                                 for i, typ in enumerate(vocab)}

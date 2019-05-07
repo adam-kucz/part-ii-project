@@ -6,7 +6,7 @@ import numpy as np
 from parse import parse
 import tensorflow as tf
 from tensorflow.keras import backend as K
-from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.models import Model
 import tensorflow.keras.callbacks as cb
 
 from ..abstract import DataMode, DataReader
@@ -199,43 +199,34 @@ class ModelTrainer:
         self._checkpointformat = str(
             self._checkpointpath.joinpath(self.fileformat))
 
-    def load_weights(self, filename_format: Optional[str] = None,
-                     load_optimizer: bool = True):
+    def load_weights(self, filename_format: Optional[str] = None):
         found = None
-        # TODO: remove '.index' hacks
-        file_format = filename_format or (self.fileformat + '.index')
+        # TODO: deal better with '.index' hacks
+        file_format = (filename_format or self.fileformat) + '.index'
         for filepath in self._checkpointpath.iterdir():
             relpath = filepath.relative_to(self._checkpointpath)
             parsed = parse(file_format, str(relpath))
             if not parsed:
                 continue
             epoch = int(parsed['epoch'] if 'epoch' in parsed else parsed[0])
-            if epoch > self.epoch:
+            if epoch >= self.epoch:
                 found = str(filepath)
-                self._epoch = epoch
+                self._epoch = epoch + 1
 
         if not found:
             raise ValueError("Cannot load weights, no saved file found",
                              'not_found')
 
         found = cut_suffix(found, '.index')
-        if load_optimizer:
-            self._model = load_model(found)
-        else:
-            self.model.load_weights(found)
+        self.model.load_weights(found)
+        # print("Loaded wieghts from epoch {}, file {}"
+        #       .format(self.epoch, found))
 
-        print("Loaded wieghts from epoch {}, file {}"
-              .format(self.epoch, found))
-
-    def save_weights(self, filename_format, save_optimizer: bool = True):
-        filename = filename_format.format(self.epoch)
+    def save_weights(self, filename_format):
+        filename = filename_format.format(epoch=self.epoch)
         path = self._checkpointpath.joinpath(filename)
         self.model.save_weights(str(path))
-        if save_optimizer:
-            optimizer_path = Path(str(path.with_suffix('')) +
-                                  '-optimizer').with_suffix(path.suffix)
-            self.model.save(str(optimizer_path))
 
     def save_core_weights(self, filename_format):
-        filename = filename_format.format(self.epoch)
+        filename = filename_format.format(epoch=self.epoch)
         self._core.save_weights(str(self._checkpointpath.joinpath(filename)))

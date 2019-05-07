@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 from ast import literal_eval
 from collections import defaultdict, OrderedDict, Counter
 from pathlib import Path
@@ -5,13 +6,14 @@ from typing import Mapping, Set, List, Optional
 
 from funcy import (compose, post_processing, walk_values, partial,
                    lmap, compact, re_find, re_test, lkeep, cat, lfilter, map,
-                   select_keys)
+                   second, lsplit_by, curry, group_by, mapcat, repeat, some)
 import matplotlib.pyplot as plt
 import numpy as np
 from parse import parse
 from sklearn.metrics import r2_score
 
-from preprocessing.util import csv_read
+from preprocessing.core.type_representation import Type, UNKNOWN
+from preprocessing.util import csv_read, app
 
 PROJPATH = Path("/home/acalc79/synced/part-ii-project/")
 OUTPATH = PROJPATH.joinpath("out")
@@ -39,13 +41,13 @@ LOGPATH = PROJPATH.joinpath("logs")
 # plt.rc('figure', titlesize=BIGGER_SIZE * SCALE)
 
 
-def figure():
-    return plt.figure(figsize=(8, 5))
+def figure(figsize=(8, 5)):
+    return plt.subplots(figsize=figsize)
     # return plt.figure(figsize=(8 * SCALE, 5 * SCALE))
 
 
 def savetopdf(imgdir: Path, fig, name: str, title: Optional[str] = None):
-    if not title:
+    if title is None:
         title = name.replace('-', ' ').replace('_', ' ').split(' ')
         title = ' '.join(word.capitalize() for word in title)
     fig.suptitle(title, y=0.99)
@@ -75,7 +77,7 @@ def project_sizes_histogram(datapath, targetpath, splitpath):
 
     counts = walk_values(partial(lmap, projs.__getitem__),
                          from_logfile(splitpath))
-    fig = figure()
+    fig, _ = figure()
     plt.hist(counts.values(), label=counts,
              color=('white', 'gray', 'black'),
              edgecolor='black', linewidth=0.5,
@@ -100,25 +102,40 @@ def type_counts_histogram(raw_dataname: str, dataset_name: str):
                 del unique[typ]
             else:
                 unique[typ] = count
+    print("Total number of records: "
+          f"{sum(common.values()) + sum(unique.values())}")
 
     dataset_path = DATAPATH.joinpath("sets", dataset_name)
     vocab = set(map(0, csv_read(dataset_path.joinpath("vocab.csv"))))
-    fig = figure()
+    fig, _ = figure()
+    get = curry(lambda col, p: [v for k, v in col.items() if p(k)])
+    collections = (common, unique)
+    predicates = (vocab.__contains__,
+                  lambda t: (t not in vocab
+                             and str(Type.from_str(t).general()) in vocab),
+                  lambda t: t not in vocab)
+    x = list(app(map(get, collections), predicates))
+    label = list(app(map(curry(lambda b, a: f'{a}, {b}'),
+                         ('common', 'project-specific')),
+                     ('in-vocabulary',
+                      'generalisable to vocabulary',
+                      'out of vocabulary')))
+    assert len(x) == len(label)
+    # print(f"Labels {label}, len(x): {len(x)}\n"
+    #       f"types of x: {lmap(type, x)}\n"
+    #       f"lengths of x: {lmap(len, x)}\n")
+    double = (lambda *ls: list(mapcat(lambda x: (x, x), ls)))
     _, _, bars = plt.hist(
-        lmap(list, ((v for k, v in common.items() if k in vocab),
-                    (v for k, v in unique.items() if k in vocab),
-                    (v for k, v in common.items() if k not in vocab),
-                    (v for k, v in unique.items() if k not in vocab))),
-        label=('in-vocabulary, common', 'in-vocabulary, project-specific',
-               'common', 'project-specific'),
-        color=['0', '0.33', '0.66', '1'],
+        x,
+        label=label,
+        color=double('1', '0.7', '0.4'),
         edgecolor='black', linewidth=0.5,
-        bins=np.logspace(np.log10(0.8), np.log10(30000), 30), log=True)
-    # for barcontainer, pattern in zip(bars, ('', '', '', '////')):
-    #     for patch in barcontainer:
-    #         patch.set_hatch(pattern)
+        bins=np.logspace(np.log10(0.8), np.log10(30000), 20), log=True)
+    for bars, pattern in zip(bars, cat(repeat(('', '/////'), 3))):
+        for patch in bars:
+            patch.set_hatch(pattern)
     plt.gca().set_xscale("log")
-    plt.ylim(0.8, 5000)
+    plt.ylim(0.5, 5000)
     # start, end = plt.xlim()
     # start = np.round(start, -3)
     # start += 2000 - (start % 2000)
@@ -127,6 +144,53 @@ def type_counts_histogram(raw_dataname: str, dataset_name: str):
     plt.ylabel("# types")
     fig.legend(borderaxespad=2)
     savetopdf(dataset_path, fig, "type-count-histogram")
+
+
+def type_counts_pies(dataset_name: str):
+    dataset_path = DATAPATH.joinpath("sets", dataset_name)
+    paths = [dset for dset in dataset_path.glob("*.csv")
+             if not re_test(r"\d+", dset.stem)
+             if dset.stem != "vocab"]
+    typs: Mapping[str, int]\
+        = Counter(map(-1, cat(csv_read(dset) for dset in paths
+                              if re_test("original", dset.stem))))
+    print(f"Total number of records: {sum(typs.values())}")
+    custom_pie(dataset_path, typs, "types")
+
+    vocab = set(map(0, csv_read(dataset_path.joinpath("vocab.csv"))))
+    test_typs: Mapping[str, int]\
+        = Counter(map(-1, cat(csv_read(dset) for dset in paths
+                              if re_test("original", dset.stem)
+                              if not re_test("train", dset.stem))))
+    vocab_typs: Mapping[str, int]\
+        = Counter(walk_values(
+            lambda ls: sum(test_typs[t] for t in ls),
+            group_by(lambda t: t if t in vocab else str(UNKNOWN), test_typs)))
+    generalised_vocab_typs: Mapping[str, int]\
+        = Counter(line[-1] if line[-1] in vocab else str(UNKNOWN)
+                  for line in cat(csv_read(dset) for dset in paths
+                                  if not re_test("original|train", dset.stem)))
+    print(f"Total number of vocab records: {sum(vocab_typs.values())}")
+    custom_pie(dataset_path, vocab_typs, "type-classes")
+    custom_pie(dataset_path, generalised_vocab_typs, "generalised-types")
+
+
+def custom_pie(dataset_path: Path, col: Counter, name: str):
+    fig, axes = figure(figsize=(5, 5))
+    percentage_cutoff = 1.5
+    pctiflarge = (lambda p: f"{p:4.1f}%" if p > percentage_cutoff else '')
+    cutoff = 200
+    label_cutoff = sum(col.values()) * percentage_cutoff / 100
+    big, rest = lsplit_by(lambda t: t[1] > cutoff, col.most_common())
+    cols = lmap(str, np.linspace(0.9, 0.3,
+                                 some(lambda x: len(big) % x, (2, 3, 5)) or 3))
+    plt.pie(lmap(second, big) + [sum(map(second, rest))],
+            labels=([t if n > label_cutoff else '' for t, n in big]
+                    + [f"[< {cutoff} occurences]"]),
+            colors=cols,
+            autopct=pctiflarge)
+    axes.axis('equal')
+    savetopdf(dataset_path, fig, f"{name}-pie-chart", title='')
 
 
 def accuracies_plot(outpath: Path, logpath: Path, targetpath: Path):
@@ -152,7 +216,7 @@ def accuracies_plot(outpath: Path, logpath: Path, targetpath: Path):
 
     for stat in ('accuracy', 'real_accuracy', 'real_top5', 'real_top3'):
         cases = sorted(stats[stat])
-        fig = figure()
+        fig, _ = figure()
         labels = [re_find(r"[a-z]+(?:-\d+)?", name).replace('-', ' ')
                   for name in cases]
         # plt.errorbar(x=[x + 1.1 for x in range(len(cases))],
@@ -195,7 +259,7 @@ def scatterplot(stats: Mapping[str, Mapping[str, float]],
                 stat1: str, stat2: str, run_path: Path, targetpath: Path):
     net_stem = run_path.parent.stem
     case_name = f"{net_stem}-{run_path.stem}"
-    fig = figure()
+    fig, _ = figure()
     all_projs = set(cat(map(dict.keys, stats.values())))
     projs = lfilter(lambda p: p in stats[stat1] and p in stats[stat2],
                     all_projs)
@@ -221,10 +285,11 @@ def scatterplot(stats: Mapping[str, Mapping[str, float]],
 
 
 if __name__ == '__main__':
-    project_sizes_histogram(DATAPATH.joinpath("raw", "identifier-f"),
-                            DATAPATH.joinpath("raw"),
-                            LOGPATH.joinpath("data-split.txt"))
+    # project_sizes_histogram(DATAPATH.joinpath("raw", "identifier-f"),
+    #                         DATAPATH.joinpath("raw"),
+    #                         LOGPATH.joinpath("data-split.txt"))
     type_counts_histogram("identifier-f", "identifier-f-very-fine")
+    type_counts_pies("identifier-f-very-fine")
     # accuracies_plot(OUTPATH, Path("test-summary.txt"), OUTPATH)
     # accuracy_vs_coverage(OUTPATH, Path("test-stat.txt"),
     #                      OUTPATH.joinpath("figures"))

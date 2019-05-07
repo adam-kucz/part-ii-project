@@ -3,7 +3,8 @@ from pathlib import Path
 import re
 from typing import Callable, Iterable, List, Optional, Tuple, TypeVar
 
-from funcy import pairwise, takewhile, iterate, re_test, lconcat
+from funcy import (pairwise, takewhile, iterate, re_test,
+                   lconcat, take, concat, repeat)
 import parso
 import parso.python.tree as pyt
 from parso.tree import Leaf
@@ -71,6 +72,7 @@ def get_context(name: pyt.Name, ctx_size: int) -> List[str]:
         last = next_last or last
         context.insert(0, head.value if next_head else '')
         context.append(last.value if next_last else '')
+    assert len(context) == 2 * ctx_size + 1, context
     return context
 
 
@@ -86,6 +88,7 @@ def get_context_with_comments(name: pyt.Name, ctx_size: int) -> List[str]:
         if not current:
             break
         before.append(current.value)
+    before = reversed(take(ctx_size, concat(before, repeat(''))))
     after = []
     current = name
     while len(after) < ctx_size:
@@ -96,7 +99,10 @@ def get_context_with_comments(name: pyt.Name, ctx_size: int) -> List[str]:
         if '#' in pref and not re_test(r'#\s*type\s*:', pref):
             after.extend(re.findall(r"(\w+|[^\w\s]+)\s*", pref))
         after.append(current.value)
-    return lconcat(reversed(before[:ctx_size]), [name.value], after[:ctx_size])
+    after = take(ctx_size, concat(after, repeat('')))
+    context = lconcat(before, [name.value], after)
+    assert len(context) == 2 * ctx_size + 1, f"{context}, {name}, {ctx_size}"
+    return context
 
 
 def get_type_contexts(
@@ -133,6 +139,9 @@ def extract_type_contexts(
     types: List[Tuple[Iterable[str], Type]]\
         = get_type_contexts(in_filename, context_size,
                             func_as_ret, include_comments)
+    for inputs, label in types:
+        assert (len(inputs) == context_size * 2 + 1
+                and isinstance(label, Type)), f"{inputs}, {label}"
     if not out_filename.parent.exists():
         out_filename.parent.mkdir(parents=True)
     if types:

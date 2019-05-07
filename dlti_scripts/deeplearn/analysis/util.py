@@ -6,7 +6,7 @@ from typing import List, Callable, Iterable, NamedTuple, Tuple
 
 from funcy import (identity, cached_property, collecting,
                    cut_prefix, compose, caller, walk_values,
-                   partition, partial, decorator)
+                   partition, partial, decorator, autocurry)
 from numpy import percentile, std, mean
 
 from ..util import csv_read
@@ -168,7 +168,7 @@ def summarise_numbers(data: Iterable[float]) -> Tuple[float, float]:
             *map(partial(percentile, data), (0, 25, 50, 75, 100)))
 
 
-def redirect_stdout(filepath: Path):
+def _redirect_stdout(filepath: Path):
     @decorator
     def redirecter(call):
         if not filepath.parent.exists():
@@ -179,3 +179,8 @@ def redirect_stdout(filepath: Path):
             call()
             sys.stdout = old_stdout
     return redirecter
+
+
+@autocurry
+def redirect_stdout(filepath: Path, func: Callable, *args, **kwargs):
+    return _redirect_stdout(filepath)(func)(*args, **kwargs)
