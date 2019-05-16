@@ -11,8 +11,8 @@ OUTPATH = PROJPATH.joinpath("out")
 DATAPATH = PROJPATH.joinpath("data", "sets")
 LOGPATH = PROJPATH.joinpath("logs")
 
-NETNAME = "contextnet-1-f-c-april"
-DATANAME = "context-1-f-c-very-fine"
+NETNAME = "contextnet-2-f-c-april"
+DATANAME = "context-2-f-c-very-fine"
 
 LOGFILE = LOGPATH.joinpath(NETNAME, "run0", "cases-log.txt")
 

@@ -37,14 +37,15 @@ def single_main(mode, ctx_size, outpath, datapath, summary):
 FLAGS = ('f', 'c', 'very', 'fine')
 NETMAP = {'charcnn': 'identifier',
           'contextnet': 'context',
-          'occurencenet': 'occurence'}
+          'occurencenet': 'occurence',
+          'baseline': 'identifier'}
 
 
 def main(outpath, datapath):
     for net_path in filter(Path.is_dir, outpath.glob("*")):
-        if not net_path.joinpath("run_eval.sh").is_file():
-            continue
         net_name = re_find(r"([a-z0-9\-]+)-[a-z]*$", net_path.stem)
+        if not net_name:
+            continue
         components = re.findall(r"[a-z0-9]+", net_name)
         assert len([c for c in components if c in NETMAP]) == 1, components
         mode = some(NETMAP[c] for c in components if c in NETMAP)

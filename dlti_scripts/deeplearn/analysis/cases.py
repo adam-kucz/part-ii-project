@@ -2,7 +2,7 @@ from collections import Counter
 from pprint import pprint
 from typing import Callable, Iterable, List, Optional
 
-from funcy import map, walk_values, group_by, ilen, cached_property
+from funcy import map, walk_values, group_by, ilen, cached_property, isa, all
 import numpy as np
 
 from .util import pickable_option
@@ -11,7 +11,11 @@ from .predictions import Predictions, RecordWithPrediction, RecordMode
 
 record_confidence = RecordWithPrediction.confidence
 record_most_likely = RecordWithPrediction.most_likely
-random_perm = np.random.permutation
+
+
+def random_perm(elems: List):
+    perm = np.random.permutation(range(len(elems)))
+    return (elems[i] for i in perm)
 
 
 class Cases(Predictions):
@@ -80,6 +84,7 @@ class Cases(Predictions):
     @pickable_option
     def show_correct_random(self):
         print("Correct, random:")
+        assert all(isa(RecordWithPrediction), self.correct)
         self.print_unique_by(random_perm(self.correct))
 
     @pickable_option
@@ -87,8 +92,8 @@ class Cases(Predictions):
         print("Wrong, random:")
         self.print_unique_by(random_perm(self.wrong))
 
-    @pickable_option
     def show_most_for_types(self):
+        raise NotImplementedError
         for typ, records in group_by(record_most_likely, self.records):
             correct_records = (r for r in records if r.correct(self.vocab))
             grouped_by_id = group_by(lambda r: r.identifier, correct_records)

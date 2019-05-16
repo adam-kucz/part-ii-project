@@ -1,11 +1,10 @@
 from abc import ABC, abstractmethod
 from enum import auto, Flag
 from pathlib import Path
-from typing import Callable, NamedTuple, Optional
+from typing import Callable, NamedTuple, Optional, Union
 
 import tensorflow as tf
-
-__all__ = ['DataMode', 'DataReader']
+from tensorflow.keras.utils import Sequence
 
 
 class DataMode(Flag):
@@ -43,5 +42,6 @@ class SizedDataset(NamedTuple):
 
 class DataReader(ABC):
     @abstractmethod
-    def __call__(self, path: Path, mode: Optional[DataMode]) -> SizedDataset:
+    def __call__(self, path: Path, mode: Optional[DataMode])\
+            -> Union[SizedDataset, Sequence]:
         pass

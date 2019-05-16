@@ -1,7 +1,8 @@
 from pathlib import Path
 from typing import List, Tuple, Iterable, Optional, NamedTuple
 
-from funcy import post_processing, lmap, partial, cached_property, lfilter
+from funcy import (
+    post_processing, lmap, partial, cached_property, lfilter, all, isa)
 
 from .util import (Interactive, Record, RecordMode,
                    cli_or_interactive, read_dataset)
@@ -61,7 +62,9 @@ class Predictions(Interactive):
 
     @cached_property
     def correct(self) -> List[RecordWithPrediction]:
-        return lfilter(lambda r: r.correct(self.vocab), self.records)
+        result = lfilter(lambda r: r.correct(self.vocab), self.records)
+        assert all(isa(RecordWithPrediction), result)
+        return result
 
     @cached_property
     def wrong(self) -> List[RecordWithPrediction]:

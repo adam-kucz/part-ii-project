@@ -18,7 +18,7 @@ class ContextNet(Model):
             tensor = Dense(**layer_params['dense'])(tensor)
             if 'dropout' in layer_params:
                 tensor = Dropout(layer_params['dropout'])(tensor)
-        super().__init__(tokens, tensor)
+        super().__init__(inputs=tokens, outputs=tensor)
         self.contextnet_params = params
 
     # def get_config(self):

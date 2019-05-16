@@ -288,8 +288,8 @@ if __name__ == '__main__':
     # project_sizes_histogram(DATAPATH.joinpath("raw", "identifier-f"),
     #                         DATAPATH.joinpath("raw"),
     #                         LOGPATH.joinpath("data-split.txt"))
-    type_counts_histogram("identifier-f", "identifier-f-very-fine")
-    type_counts_pies("identifier-f-very-fine")
-    # accuracies_plot(OUTPATH, Path("test-summary.txt"), OUTPATH)
-    # accuracy_vs_coverage(OUTPATH, Path("test-stat.txt"),
-    #                      OUTPATH.joinpath("figures"))
+    # type_counts_histogram("identifier-f", "identifier-f-very-fine")
+    # type_counts_pies("identifier-f-very-fine")
+    accuracies_plot(OUTPATH, Path("test-summary.txt"), OUTPATH)
+    accuracy_vs_coverage(OUTPATH, Path("test-stat.txt"),
+                         OUTPATH.joinpath("figures"))
