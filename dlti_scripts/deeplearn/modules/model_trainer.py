@@ -20,9 +20,12 @@ class RestoreBest(cb.Callback):
     verbose: int
     best_epoch: int
 
-    def __init__(self, set_epoch=lambda _: None,
+    def __init__(self, trainer, set_epoch=lambda _: None,
                  monitor='val_loss', verbose=0, mode='auto'):
         super().__init__()
+        # TODO: remove (hack to prevent loss of partially-trained models)
+        self.trainer = trainer
+        # end hack
         self.set_epoch = set_epoch
         self.monitor = monitor
 
@@ -49,11 +52,19 @@ class RestoreBest(cb.Callback):
             self.best = current
             self.best_epoch = epoch
             self.best_weights = self.model.get_weights()
+            # TODO: remove hack
+            if epoch - self.last_saved > 20:
+                self.trainer.save_weights('weights_{epoch}-optimizer')
+                self.last_saved = epoch
+            # end hack
 
     def on_train_begin(self, logs=None):  # pylint: disable=unused-argument
         self.best_epoch = 0
         # pylint: disable=comparison-with-callable
         self.best = np.Inf if self.monitor_op == np.less else -np.Inf
+        # TODO: remove hack
+        self.last_saved = self.trainer.epoch
+        # end hack
 
     def on_train_end(self, logs=None):  # pylint: disable=unused-argument
         if self.best_epoch > 0:
@@ -127,7 +138,8 @@ class ModelTrainer:
                 cb.EarlyStopping(monitor=self.monitor, patience=patience,
                                  restore_best_weights=True,
                                  verbose=verbose),
-                RestoreBest(set_epoch=set_epoch, monitor=self.monitor,
+                RestoreBest(trainer=self,
+                            set_epoch=set_epoch, monitor=self.monitor,
                             verbose=verbose)],
             verbose=verbose, shuffle=False, validation_data=val_dataset.data,
             steps_per_epoch=train_dataset.steps_per_epoch,

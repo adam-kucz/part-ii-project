@@ -52,9 +52,9 @@ class FullOccurenceNet(VocabCategoricalStandalone):
         ctx_size = params['ctx_size']
         ctx_len = ctx_size * 2 + 1
         dataset_producer = OccurenceCsvReader(ctx_size, batch_size)
-        inputs = (Input(shape=(None, ctx_len), dtype=tf.string),
-                  Input(shape=(None, ctx_len), dtype=tf.int8))
+        inputs = [Input(shape=(None, ctx_len), dtype=tf.string),
+                  Input(shape=(None,), dtype=tf.int8)]
         core = OccurenceNet(params)
-        super().__init__('contextnet', dataset_producer, vocab_path,
+        super().__init__('occurence_net', dataset_producer, vocab_path,
                          inputs, core(inputs), core,
                          out_dir, run_name, optimizer=optimizer)

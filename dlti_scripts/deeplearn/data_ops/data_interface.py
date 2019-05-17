@@ -37,6 +37,7 @@ class LabelTransformingReader(DataReader):
         dataset = self.reader(path, mode)
         if mode & DataMode.LABELS:
             dataset = dataset.map(lambda x, y: (x, self.label_transform(y)))
+        # print(f"Transformed dataset: {dataset}")
         return dataset
 
 
@@ -105,16 +106,22 @@ class OccurenceCsvReader(CsvReader):
     def _read_dataset(self, path: Path, mode: DataMode)\
             -> Tuple[tf.data.Dataset, int]:
         types: Tuple = ()
+        shapes: Tuple = ()
         if mode & DataMode.INPUTS:
+            ctx_len = self.ctx_size * 2 + 1
             types += (tf.string, tf.int8),
+            shapes += ((None, None, ctx_len), (None, None)),
         if mode & DataMode.LABELS:
             types += tf.string,
+            shapes += (None,),
         sequence = OccurenceCsvSequence(
             self.ctx_size, path, self.batch_size, mode)
-        print(f"Constructed sequence: {sequence}, "
-              f"isiterable: {isinstance(sequence, Iterable)}")
-        return tf.data.Dataset.from_generator(
-            lambda: sequence, output_types=types), len(sequence)
+        # print(f"Constructed sequence: {sequence}, "
+        #       f"isiterable: {isinstance(sequence, Iterable)}")
+        return (tf.data.Dataset.from_generator(lambda: sequence,
+                                               output_types=types,
+                                               output_shapes=shapes),
+                len(sequence))
 
     def _batch(self, dataset: tf.data.Dataset,
                dataset_size: int, mode: DataMode)\
@@ -136,7 +143,8 @@ class OccurenceCsvSequence(tf.keras.utils.Sequence):
     def __init__(self, ctx_size: int, path: Path,
                  batch_size: Optional[int] = None,
                  mode: DataMode = DataMode.TRAIN) -> None:
-        ctx_len = 2 * ctx_size + 1
+        # print(f"Sequence for context size: {ctx_size}")
+        self.ctx_len = ctx_len = 2 * ctx_size + 1
         assert batch_size is not None or not mode & DataMode.BATCH
         self.batch_size = batch_size
         raw = csv_read(path)
@@ -164,6 +172,13 @@ class OccurenceCsvSequence(tf.keras.utils.Sequence):
             self.batches = lzip(input_batches, labels)
         else:
             self.batches = list(input_batches)
+        for (ctxs, masks), labels in self.batches:
+            lens = (len(ctxs), len(masks), len(labels))
+            assert lens[0] <= self.batch_size, (ctxs, lens[0])
+            assert lens[1] <= self.batch_size, (masks, lens[1])
+            assert lens[2] <= self.batch_size, (labels, lens[2])
+            assert lens[0] == lens[1] == lens[2], lens
+        # print(f"Last batch has length {len(self.batches[-1][0])}")
 
     def zero_pad(self, batch: Iterable[List[Context]]) -> InputBatch:
         batch = list(batch)
@@ -176,6 +191,8 @@ class OccurenceCsvSequence(tf.keras.utils.Sequence):
         padded = lmap(pad_record, batch)
         for record in padded:
             ctxs, mask = record
+            for ctx in ctxs:
+                assert len(ctx) == self.ctx_len, (ctx, self.ctx_len)
             assert len(ctxs) == len(mask) == maxlen, record
             assert all(partial(all, isa(str)), ctxs), ctxs
             assert all(isa(int), mask), mask
@@ -185,4 +202,5 @@ class OccurenceCsvSequence(tf.keras.utils.Sequence):
         return len(self.batches)
 
     def __getitem__(self, idx: int):
+        # print(f"Getting element {idx} with label:\n{self.batches[idx][1]}\n")
         return self.batches[idx]

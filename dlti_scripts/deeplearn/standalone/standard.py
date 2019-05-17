@@ -37,9 +37,11 @@ class CategoricalStandalone(StandardStandalone):
                  inputs: SomeLayers, outputs: SomeLayers, core: Model,
                  out_dir: Path, run_name: str = 'default', metrics: List = [],
                  optimizer=tf.train.AdamOptimizer()):
-        topk = metr.sparse_top_k_categorical_accuracy
-        metrics = metrics + [metr.SparseCategoricalAccuracy(), topk]
-        probabilities = ProbabilityOutput(class_num)(outputs)
+        metrics = metrics + [metr.SparseCategoricalAccuracy()]
+        if class_num > 5:
+            metrics += [metr.sparse_top_k_categorical_accuracy]
+        output_layer = ProbabilityOutput(class_num)
+        probabilities = output_layer(outputs)
         super().__init__(name, dataset_producer, inputs, probabilities, core,
                          tf.keras.losses.CategoricalCrossentropy(),
                          metrics, out_dir, run_name,

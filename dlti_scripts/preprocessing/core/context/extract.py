@@ -14,8 +14,6 @@ from ..type_collector import TypeCollector
 from ..type_representation import Type
 from ...util import csv_write, static_vars, track_total_time
 
-__all__ = ["extract_type_contexts", "get_context"]
-
 T = TypeVar('T')
 
 
