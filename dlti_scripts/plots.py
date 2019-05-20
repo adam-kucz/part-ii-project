@@ -186,7 +186,7 @@ def custom_pie(dataset_path: Path, col: Counter, name: str):
                                  some(lambda x: len(big) % x, (2, 3, 5)) or 3))
     plt.pie(lmap(second, big) + [sum(map(second, rest))],
             labels=([t if n > label_cutoff else '' for t, n in big]
-                    + [f"[< {cutoff} occurences]"]),
+                    + [f"[< {cutoff} occurrences]"]),
             colors=cols,
             autopct=pctiflarge)
     axes.axis('equal')
@@ -216,7 +216,7 @@ def accuracies_plot(outpath: Path, logpath: Path, targetpath: Path):
 
     for stat in ('accuracy', 'real_accuracy', 'real_top5', 'real_top3'):
         cases = sorted(stats[stat])
-        fig, _ = figure()
+        fig, _ = figure(figsize=(10, 5))
         labels = [re_find(r"[a-z]+(?:-\d+)?", name).replace('-', ' ')
                   for name in cases]
         # plt.errorbar(x=[x + 1.1 for x in range(len(cases))],
@@ -289,7 +289,7 @@ if __name__ == '__main__':
     #                         DATAPATH.joinpath("raw"),
     #                         LOGPATH.joinpath("data-split.txt"))
     # type_counts_histogram("identifier-f", "identifier-f-very-fine")
-    # type_counts_pies("identifier-f-very-fine")
-    accuracies_plot(OUTPATH, Path("test-summary.txt"), OUTPATH)
-    accuracy_vs_coverage(OUTPATH, Path("test-stat.txt"),
-                         OUTPATH.joinpath("figures"))
+    type_counts_pies("identifier-f-very-fine")
+    # accuracies_plot(OUTPATH, Path("test-summary.txt"), OUTPATH)
+    # accuracy_vs_coverage(OUTPATH, Path("test-stat.txt"),
+    #                      OUTPATH.joinpath("figures"))

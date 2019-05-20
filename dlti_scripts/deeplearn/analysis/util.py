@@ -149,17 +149,44 @@ def read_dataset(mode: RecordMode, ctx_size: int, path: Path)\
     raw = csv_read(path)
     if not raw:
         return
-    assert len(raw[0]) % 2 == 0,\
-        f"Invalid record length: {len(raw[0])}, record {raw[0]}"
-    ctx_size = (ctx_size if mode == RecordMode.OCCURENCES
-                else (len(raw[0]) - 2) // 2)
+    if mode != RecordMode.OCCURENCES:
+        assert len(raw[0]) % 2 == 0,\
+            f"Invalid record length: {len(raw[0])}, record {raw[0]}, mode: {mode}"
+        ctx_size = (len(raw[0]) - 2) // 2
+    ctx_len = 2 * ctx_size + 1
+    if mode == RecordMode.OCCURENCES:
+        assert (len(raw[0]) - 1) % ctx_len == 0,\
+            f"Invalid record length: {len(raw[0])}, record {raw[0]}, ctx_len: {ctx_len}, mode: {mode}"
     for row in raw:
         inputs = row[:-1]
         if mode == RecordMode.OCCURENCES:
-            inputs = partition(ctx_size, inputs)
+            inputs = partition(ctx_len, inputs)
         yield Record(identifier=row[ctx_size],
                      inputs=tuple(inputs),
                      label=row[-1])
+
+
+@collecting
+def read_unlabeled_dataset(mode: RecordMode, ctx_size: int, path: Path)\
+        -> Iterable[Record]:
+    raw = csv_read(path)
+    if not raw:
+        return
+    if mode != RecordMode.OCCURENCES:
+        assert len(raw[0]) % 2 == 1,\
+            f"Invalid record length: {len(raw[0])}, record {raw[0]}, mode: {mode}"
+        ctx_size = (len(raw[0]) - 1) // 2
+    ctx_len = 2 * ctx_size + 1
+    if mode == RecordMode.OCCURENCES:
+        assert len(raw[0]) % ctx_len == 0,\
+            f"Invalid record length: {len(raw[0])}, record {raw[0]}, ctx_len: {ctx_len}, mode: {mode}"
+    for row in raw:
+        inputs = row
+        if mode == RecordMode.OCCURENCES:
+            inputs = partition(ctx_len, inputs)
+        yield Record(identifier=row[ctx_size],
+                     inputs=tuple(inputs),
+                     label=None)
 
 
 def summarise_numbers(data: Iterable[float]) -> Tuple[float, float]:

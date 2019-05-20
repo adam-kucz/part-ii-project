@@ -85,9 +85,9 @@ class RegularCsvReader(CsvReader):
         if mode & DataMode.LABELS:
             if mode & DataMode.INPUTS:
                 return dataset.map(lambda *x: (x[:-1], x[-1])), size
-            return dataset.map(lambda *y: (y,)), size
+            return dataset.map(lambda *y: ('', y)), size
         elif mode & DataMode.INPUTS:
-            return dataset.map(lambda *x: (x,)), size
+            return dataset.map(lambda *x: (x, '')), size
         raise ValueError("Invalid data mode, "
                          "must include at least one of INPUTS or LABLES", mode)
 
@@ -111,9 +111,8 @@ class OccurenceCsvReader(CsvReader):
             ctx_len = self.ctx_size * 2 + 1
             types += (tf.string, tf.int8),
             shapes += ((None, None, ctx_len), (None, None)),
-        if mode & DataMode.LABELS:
-            types += tf.string,
-            shapes += (None,),
+        types += tf.string,
+        shapes += (None,),
         sequence = OccurenceCsvSequence(
             self.ctx_size, path, self.batch_size, mode)
         # print(f"Constructed sequence: {sequence}, "
@@ -150,6 +149,7 @@ class OccurenceCsvSequence(tf.keras.utils.Sequence):
         raw = csv_read(path)
         if not mode & DataMode.INPUTS:
             if mode & DataMode.LABELS:
+                # TODO: handle properly
                 if mode & DataMode.BATCH:
                     data = lchunks(self.batch_size, raw)
                 else:
@@ -169,9 +169,10 @@ class OccurenceCsvSequence(tf.keras.utils.Sequence):
         input_batches: InputBatch = map(self.zero_pad, ctxs)
         if mode & DataMode.LABELS:
             labels = (np.array(lmap(-1, batch)) for batch in batches)
-            self.batches = lzip(input_batches, labels)
         else:
-            self.batches = list(input_batches)
+            labels = (np.array(lmap(lambda _: '', batch))
+                      for batch in batches)
+        self.batches = lzip(input_batches, labels)
         for (ctxs, masks), labels in self.batches:
             lens = (len(ctxs), len(masks), len(labels))
             assert lens[0] <= self.batch_size, (ctxs, lens[0])

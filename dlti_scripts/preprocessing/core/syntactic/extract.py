@@ -3,7 +3,7 @@ from typing import Iterable, List, Mapping, Tuple
 
 from funcy import (
     takewhile, iterate, collecting, remove, any_fn, cat,
-    group_by, walk_values, partial, lmap, concat, some, take, isa)
+    group_by, walk_values, partial, lmap, concat, some, take, isa, lremove)
 import parso
 import parso.python.tree as pyt
 
@@ -129,3 +129,49 @@ def extract_all_syntactic_contexts(
     if all_contexts:
         csv_write(out_filename, (concat(cat(contexts), [typ])
                                  for contexts, typ in all_contexts))
+
+
+@collecting
+def get_all_untyped_syntactic_contexts(
+        filepath: Path, context_size: int, include_comments: bool = False)\
+        -> Iterable[Iterable[Tuple[pyt.Name, Iterable[str]]]]:
+    """
+    Extract contexts of all occurences of all sensible identifiers from file
+
+    :param filepath: Path: path to the source file to extract types from
+    :param ctx_size: int: how many surroudning tokens should be included, >= 0
+    :returns: list of contexts for identifiers
+    """
+    tree: pyt.Module = parse(filepath.read_text())
+
+    # get identifier occurences
+    binding_collector = BindingCollector()
+    binding_collector.visit(tree)
+    # pylint doesn't deal well with currying
+    # pylint: disable=no-value-for-parameter
+    get_namespace = get_defining_namespace(binding_collector.bindings)
+
+    names: Iterable[pyt.Name] = remove(
+        any_fn(attraccess, arg_keyword, import_src),
+        cat(tree.get_used_names().values()))
+    names_with_namespaces: Iterable[Tuple[pyt.Name, Namespace]]\
+        = filter(lambda t: t[1],
+                 map(lambda name: (name, get_namespace(name)), names))
+    occurences_in_namespaces: Mapping[Namespace, List[pyt.Name]]\
+        = walk_values(partial(map, lambda t: t[0]),
+                      group_by(lambda t: t[1], names_with_namespaces))
+
+    occurences: Mapping[Namespace, Mapping[str, List[pyt.Name]]]\
+        = walk_values(partial(group_by, lambda n: n.value),
+                      occurences_in_namespaces)
+
+    extract_fun = (get_context_with_comments if include_comments
+                   else get_context)
+    for namespace_names in occurences.values():
+        for name_occurences in namespace_names.values():
+            name_occurences = lremove(pure_annotation, name_occurences)
+            contexts = [(name, extract_fun(name, context_size))
+                        for name in name_occurences
+                        if not pure_annotation(name)]
+            if contexts:
+                yield contexts

@@ -29,7 +29,7 @@ class StandardStandalone(ModelTrainer):
         super().__init__(name, dataset_producer, Model(inputs, outputs), core,
                          out_dir, run_name, monitor=monitor)
         self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
-        self.model.summary()
+        # self.model.summary()
 
 
 class CategoricalStandalone(StandardStandalone):
@@ -77,3 +77,13 @@ class VocabCategoricalStandalone(CategoricalStandalone):
         # return map(lambda x, y, pred:
         #            (x, self.index_to_typ[y], self.index_to_typ[pred]),
         #            raw_examples)
+
+    def full_true_predictions(self, valpath)\
+            -> Iterable[Iterable[float]]:
+        raw_examples = self.predict(valpath, verbose=0)
+
+        def process_probs(probs):
+            indices = np.argsort(probs)[::-1]
+            return zip(map(lambda ind: self.index_to_typ[ind], indices),
+                       probs[indices])
+        return map(process_probs, raw_examples)

@@ -1,4 +1,6 @@
-from deeplearn.standalone.networks import FullCharCNN
+from .modules.charcnn import CharCNN
+from .standalone.networks import FullContextNet
+from .standalone.networks import FullCharCNN
 import deeplearn.evaluate
 
 

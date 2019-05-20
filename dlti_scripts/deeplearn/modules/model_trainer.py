@@ -177,6 +177,7 @@ class ModelTrainer:
     def test_detail(self, valpath: Path, out_fileformat: Path, verbose=1):
         self._ensure_initialized()
         val_dataset, steps = self.data_reader(valpath, DataMode.TEST)
+        print(f"Dataset: {val_dataset}, steps: {steps}")
         metrics = self.model.evaluate(x=val_dataset, verbose=verbose,
                                       steps=steps)
         out_filename = self.outpath.joinpath(self.run_name,

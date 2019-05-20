@@ -26,7 +26,7 @@ tf.logging.set_verbosity(tf.logging.ERROR)
 def interactive(
         program_name: str,
         trainer_producer: Callable[[int, Dict[str, Any], dict], ModelTrainer],
-        final_checkpoint: str = 'weights_{}.keras'):
+        final_checkpoint: str = 'weights_{}-optimizer.keras'):
     start_time: datetime = datetime.now()
     parser = argparse.ArgumentParser(
         description="Run '{}'".format(program_name),
@@ -46,7 +46,8 @@ def interactive(
     args = parser.parse_args()
 
     test_paths: Iterable[Path] = [p for p in args.data_path.glob("*.csv")
-                                  if re_test(r'test\d+$', p.stem)]
+                                  if re_test(r'test\d+$', p.stem)
+                                  if p.read_text()]
 
     params = json.loads(args.params.read_text())
     trainer = trainer_producer(params, args.data_path, args.batch_size,
@@ -65,6 +66,7 @@ def interactive(
         return
 
     for test_path in test_paths:
+        print(f"Entering {test_path}")
         trainer.test_detail(test_path, test_path.stem + '_epoch{}.csv')
 
     print("Finished successfully in {}".format(datetime.now() - start_time))
