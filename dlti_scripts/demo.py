@@ -87,7 +87,7 @@ def analyse_file(source_path: Path, out_path: Path,
                   predictions)
     names = csv_read(WORKDIR.joinpath(f"{source_path.stem}-names.csv"))
     out_path.write_text(''.join(
-        f"{name} at ({line}, {col}): {rec.top_k()}\n"
+        f"{name} at ({line}, {col}): {rec.predictions[:3]}\n"
         for (name, line, col), rec in zip(names, records)))
 
 
@@ -98,7 +98,7 @@ def main() -> None:
     while True:
         source_files = [path for path in DEMODIR.glob("*.py")
                         if not path.stem.startswith('.')
-                        if not 'flycheck' in path.stem]
+                        if 'flycheck' not in path.stem]
         with_time = ((path, path.stat().st_mtime) for path in source_files)
         new_source_files = {path: mtime
                             for path, mtime in with_time
@@ -110,10 +110,13 @@ def main() -> None:
             for netname, net in nets.items():  # pylint: disable=no-member
                 out_name = f"{source_file.stem}-{netname}.pyi"
                 out_path = source_file.parent.joinpath(out_name)
-                extract_file(source_file)
-                analyse_file(source_file, out_path, net, netname)
+                try:
+                    extract_file(source_file)
+                    analyse_file(source_file, out_path, net, netname)
+                except Exception as err:
+                    print(f"Exception {err}")
         processed.update(new_source_files)
-        time.sleep(10)
+        time.sleep(2)
 
 
 if __name__ == '__main__':
